@@ -5,8 +5,14 @@ local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
 local localPlayer = Players.LocalPlayer
 
+-- Rayfield GUI
+local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+
+-- ESP состояние
+local ESPEnabled = false
+
 -- Define weapon lists
-local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED"}
+local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17"} 
 
 -- Convert weapon lists to dictionaries for faster lookup
@@ -96,6 +102,204 @@ for teamName, members in pairs(teams) do
         characterToTeam[cleanName] = teamName
     end
 end
+
+-- =============================================================================
+-- HINT SYSTEM INTEGRATION
+-- =============================================================================
+
+local playersMatchingHints = {} -- Stores players who currently match hints
+local hintTextConnection = nil -- Stores the signal connection for the hint text
+local NPCSFolder = Workspace:FindFirstChild("NPCSFolder") -- For hint matching
+
+-- Function to parse a single hint
+local function parseSingleHint(hintContent)
+    local hintType = "invalid"
+    local hintValue = nil
+    local cleanedContent = hintContent:match("^%s*(.-)%s*$") or ""
+
+    if string.len(cleanedContent) == 0 then
+        return hintType, hintValue
+    end
+
+    -- Check for task hint format: "Is often seen " followed by the task
+    local taskMatch = cleanedContent:match("^Is often seen%s*(.*)$")
+    if taskMatch then
+        hintType = "task"
+        hintValue = taskMatch:match("^%s*(.-)%s*$")
+        return hintType, hintValue
+    end
+
+    -- Check for trait hint format: text within square brackets []
+    local traitBracketMatch = cleanedContent:match("^%[.-%]$")
+    if traitBracketMatch then
+        local cleanClue = traitBracketMatch:gsub("[%[%]]", ""):match("^%s*(.-)%s*$") or ""
+        if string.len(cleanClue) > 0 and cleanClue:lower() ~= "assigned task" and cleanClue:lower() ~= "seen" then
+            hintType = "trait"
+            hintValue = cleanClue
+            return hintType, hintValue
+        end
+    end
+
+    -- If neither format matched, treat as unbracketed trait
+    if hintType == "invalid" then
+        hintType = "trait"
+        hintValue = cleanedContent
+    end
+
+    return hintType, hintValue
+end
+
+-- Function to update players matching hints
+local function updateMatchingHintPlayers()
+    playersMatchingHints = {} -- Clear previous results
+
+    local PlayerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not PlayerGui then return end
+
+    -- Find the hint label (adjust path as needed for your game)
+    local TargetHintLabel = PlayerGui:FindFirstChild("RESETONDEATHStatusGui") and 
+                           PlayerGui.RESETONDEATHStatusGui:FindFirstChild("TARGETHINT")
+
+    if not TargetHintLabel or not TargetHintLabel:IsA("TextLabel") then
+        return
+    end
+
+    local hintText = TargetHintLabel.Text
+
+    -- Check if local player is killer based on hint prefix
+    local hintPrefix = "Hints : "
+    local lowerHintText = string.lower(hintText)
+    local lowerHintPrefix = string.lower(hintPrefix)
+
+    if lowerHintText:sub(1, string.len(lowerHintPrefix)) ~= lowerHintPrefix then
+        return -- Exit if not killer
+    end
+
+    -- Remove prefix and parse hints
+    local actualHintContent = hintText:sub(string.len(hintPrefix) + 1):match("^%s*(.-)%s*$")
+    
+    if string.len(string.gsub(actualHintContent, "%s", "")) == 0 then
+        return
+    end
+
+    -- Split hint content by " + "
+    local individualHintParts = {}
+    local currentPos = 1
+    while currentPos <= string.len(actualHintContent) do
+        local nextPlus = string.find(actualHintContent, " + ", currentPos, true)
+        if nextPlus then
+            local hintPart = string.sub(actualHintContent, currentPos, nextPlus - 1)
+            table.insert(individualHintParts, hintPart)
+            currentPos = nextPlus + string.len(" + ")
+        else
+            local hintPart = string.sub(actualHintContent, currentPos)
+            table.insert(individualHintParts, hintPart)
+            break
+        end
+    end
+
+    if #individualHintParts == 0 and string.len(actualHintContent) > 0 then
+        table.insert(individualHintParts, actualHintContent)
+    end
+
+    local targetConditions = {}
+
+    for i, hintPartContent in ipairs(individualHintParts) do
+        local targetNumberMatch = hintPartContent:match("^%[%s*(%d+)%s*%]")
+        local targetNumber = tonumber(targetNumberMatch) or 1
+        local cleanedHintPartContent = hintPartContent:gsub("^%[%s*%d+%s*%]%s*", ""):match("^%s*(.-)%s*$") or ""
+
+        local hintType, hintValue = parseSingleHint(cleanedHintPartContent)
+
+        if hintType ~= "invalid" and hintValue and string.len(hintValue) > 0 then
+            if not targetConditions[targetNumber] then
+                targetConditions[targetNumber] = {}
+            end
+            table.insert(targetConditions[targetNumber], { type = hintType, value = hintValue })
+        end
+    end
+
+    -- Check each player against hint conditions
+    if not NPCSFolder or next(targetConditions) == nil then
+        return
+    end
+
+    for _, player in Players:GetPlayers() do
+        if player ~= localPlayer then
+            local playerNPCModel = NPCSFolder:FindFirstChild(player.Name)
+
+            if playerNPCModel then
+                local configObject = playerNPCModel:FindFirstChild("Configuration")
+                local playerMatchesAnyTarget = false
+
+                for targetNumber, conditionsForTarget in pairs(targetConditions) do
+                    local playerMatchesAllConditionsForTarget = true
+
+                    for _, condition in ipairs(conditionsForTarget) do
+                        local conditionMet = false
+
+                        if condition.type == "task" then
+                            local assignedTaskObject = playerNPCModel:FindFirstChild("AssignedTask")
+                            if assignedTaskObject and assignedTaskObject:IsA("StringValue") and 
+                               assignedTaskObject.Value == condition.value then
+                                conditionMet = true
+                            end
+                        elseif condition.type == "trait" then
+                            if configObject then
+                                for _, configChild in ipairs(configObject:GetChildren()) do
+                                    if configChild:IsA("StringValue") and configChild.Value == condition.value then
+                                        conditionMet = true
+                                        break
+                                    end
+                                end
+                            end
+                        end
+
+                        if not conditionMet then
+                            playerMatchesAllConditionsForTarget = false
+                            break
+                        end
+                    end
+
+                    if playerMatchesAllConditionsForTarget then
+                        playerMatchesAnyTarget = true
+                        break
+                    end
+                end
+
+                if playerMatchesAnyTarget then
+                    playersMatchingHints[player] = true
+                end
+            end
+        end
+    end
+end
+
+-- Function to connect hint text signal
+local function connectHintTextSignal()
+    if hintTextConnection then
+        hintTextConnection:Disconnect()
+        hintTextConnection = nil
+    end
+
+    local PlayerGui = localPlayer:FindFirstChild("PlayerGui")
+    if not PlayerGui then return end
+
+    local statusGui = PlayerGui:WaitForChild("RESETONDEATHStatusGui", 10)
+    if not statusGui then return end
+
+    local TargetHintLabel = statusGui:WaitForChild("TARGETHINT", 5)
+    if not TargetHintLabel or not TargetHintLabel:IsA("TextLabel") then
+        return
+    end
+
+    hintTextConnection = TargetHintLabel:GetPropertyChangedSignal("Text"):Connect(updateMatchingHintPlayers)
+    updateMatchingHintPlayers() -- Initial check
+end
+
+-- =============================================================================
+-- ORIGINAL ESP SYSTEM (MODIFIED FOR HINTS)
+-- =============================================================================
 
 -- Cache variables for optimization
 local rolesChecked = false
@@ -199,7 +403,7 @@ local function getPlayerWeapons(player)
     playerWeaponsCache[player] = {
         weapons = weapons,
         time = currentTime
-    end
+    }
     
     return weapons
 end
@@ -250,8 +454,29 @@ local function getPlayerTeam(player)
     return nil
 end
 
--- Function to determine player color (уникальные цвета для команд)
+-- MODIFIED: Function to determine player color with hint support
 local function getPlayerColor(player)
+    -- Check if player matches hints FIRST (highest priority)
+    if playersMatchingHints[player] then
+        local weapons = getPlayerWeapons(player)
+        
+        -- Check if player has killer or sheriff weapons
+        local hasKillerOrSheriffWeapon = false
+        for _, weaponName in ipairs(weapons) do
+            if killerWeaponsLookup[weaponName] or sheriffWeaponsLookup[weaponName] then
+                hasKillerOrSheriffWeapon = true
+                break
+            end
+        end
+        
+        if hasKillerOrSheriffWeapon then
+            return Color3.fromRGB(128, 0, 128) -- Фиолетовый для киллера/шерифа с подсказкой
+        else
+            return Color3.fromRGB(255, 255, 0) -- Желтый для обычного игрока с подсказкой
+        end
+    end
+    
+    -- Original color logic if no hint match
     local rolesFound = checkForRoles()
     
     if rolesFound then
@@ -298,21 +523,27 @@ local function formatWeaponsList(weapons, distance)
     end
 end
 
--- Function to create display text with distance check and health
+-- MODIFIED: Function to create display text with hint indicator
 local function createDisplayText(playerName, weapons, distance, currentHealth, maxHealth)
     local weaponText = formatWeaponsList(weapons, distance)
     local healthText = "HP: " .. currentHealth .. "/" .. maxHealth
     
-    -- Add team info if available
+    -- Add hint indicator if player matches hints
     local player = Players:FindFirstChild(playerName)
+    local hintIndicator = ""
+    if player and playersMatchingHints[player] then
+        hintIndicator = " [HINT]"
+    end
+    
+    -- Add team info if available
     if player then
         local playerTeam = getPlayerTeam(player)
         if playerTeam then
-            return playerName .. " [" .. playerTeam .. "]\n" .. weaponText .. "\n" .. healthText
+            return playerName .. " [" .. playerTeam .. "]" .. hintIndicator .. "\n" .. weaponText .. "\n" .. healthText
         end
     end
     
-    return playerName .. "\n" .. weaponText .. "\n" .. healthText
+    return playerName .. hintIndicator .. "\n" .. weaponText .. "\n" .. healthText
 end
 
 -- Table to store active ESP elements
@@ -367,6 +598,7 @@ end
 
 -- Function to highlight dropped weapons
 local function highlightDroppedWeapon(tool)
+    if not ESPEnabled then return end
     if not tool:IsA("Tool") then return end
     if activeWeaponHighlights[tool] then return end
     
@@ -414,6 +646,8 @@ end
 
 -- Optimized workspace monitoring
 local function monitorWorkspaceForWeapons()
+    if not ESPEnabled then return end
+    
     -- Initial scan in chunks to prevent lag
     local tools = {}
     for _, tool in ipairs(Workspace:GetDescendants()) do
@@ -431,16 +665,20 @@ local function monitorWorkspaceForWeapons()
     end
     
     -- Listen for new tools
-    Workspace.DescendantAdded:Connect(function(descendant)
+    local weaponConnection
+    weaponConnection = Workspace.DescendantAdded:Connect(function(descendant)
         if descendant:IsA("Tool") then
             task.wait(0.1)
             highlightDroppedWeapon(descendant)
         end
     end)
+    
+    return weaponConnection
 end
 
 -- MAIN FUNCTION: Create ESP for a player - БЫСТРАЯ ВЕРСИЯ БЕЗ ДИСТАНЦИОННЫХ ОГРАНИЧЕНИЙ
 local function createPlayerESP(player)
+    if not ESPEnabled then return end
     if player == localPlayer then return end
 
     local character = player.Character
@@ -527,6 +765,8 @@ end
 
 -- Function to handle character added event - МГНОВЕННАЯ ВЕРСИЯ
 local function onCharacterAdded(character, player)
+    if not ESPEnabled then return end
+    
     if activeESPGuis[player] then
         if activeESPGuis[player].billboardGui then
             activeESPGuis[player].billboardGui:Destroy()
@@ -546,6 +786,8 @@ end
 
 -- Function to handle player added
 local function onPlayerAdded(player)
+    if not ESPEnabled then return end
+    
     player.CharacterAdded:Connect(function(character)
         onCharacterAdded(character, player)
     end)
@@ -568,33 +810,50 @@ local function onPlayerRemoving(player)
         activeESPGuis[player] = nil
     end
     playerWeaponsCache[player] = nil
+    playersMatchingHints[player] = nil -- Remove from hint matches
 end
 
--- Функция для загрузки через loadstring
-local function initializeESP()
-    print("Instant ESP Script with HP Display, Distance-Based Item Display and New Teams Initialized")
+-- =============================================================================
+-- ESP CONTROL FUNCTIONS
+-- =============================================================================
 
+-- Event connections storage
+local eventConnections = {}
+local mainLoopConnection = nil
+local fastScanConnection = nil
+local weaponMonitorConnection = nil
+
+-- Function to enable ESP
+local function enableESP()
+    if ESPEnabled then return end
+    ESPEnabled = true
+    
+    print("ESP Enabled")
+    
+    -- Connect hint system
+    connectHintTextSignal()
+    
+    -- Connect player events
+    eventConnections.playerAdded = Players.PlayerAdded:Connect(onPlayerAdded)
+    eventConnections.playerRemoving = Players.PlayerRemoving:Connect(onPlayerRemoving)
+    
     -- МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ всех игроков
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= localPlayer then
             onPlayerAdded(player)
         end
     end
-
-    -- SET UP EVENT HANDLERS
-    Players.PlayerAdded:Connect(onPlayerAdded)
-    Players.PlayerRemoving:Connect(onPlayerRemoving)
-
+    
     -- Start monitoring for dropped weapons
-    task.wait(1)
-    monitorWorkspaceForWeapons()
-
+    weaponMonitorConnection = monitorWorkspaceForWeapons()
+    
     -- БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ
     local updateCounter = 0
     local cleanupCounter = 0
-
-    local heartbeatConnection
-    heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
+    
+    mainLoopConnection = RunService.Heartbeat:Connect(function(deltaTime)
+        if not ESPEnabled then return end
+        
         updateCounter = updateCounter + deltaTime
         cleanupCounter = cleanupCounter + deltaTime
         
@@ -616,10 +875,11 @@ local function initializeESP()
             cleanupOldHighlights()
         end
     end)
-
+    
     -- ДОПОЛНИТЕЛЬНЫЙ МГНОВЕННЫЙ СКАН ДЛЯ НОВЫХ ИГРОКОВ
-    local fastScanConnection
     fastScanConnection = RunService.Heartbeat:Connect(function()
+        if not ESPEnabled then return end
+        
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= localPlayer and not activeESPGuis[player] and player.Character then
                 -- МГНОВЕННО создаем ESP для игроков, у которых еще нет ESP
@@ -627,60 +887,167 @@ local function initializeESP()
             end
         end
     end)
-
-    -- Возвращаем функции для управления скриптом
-    return {
-        Stop = function()
-            -- Останавливаем все соединения
-            if heartbeatConnection then
-                heartbeatConnection:Disconnect()
-            end
-            if fastScanConnection then
-                fastScanConnection:Disconnect()
-            end
-            
-            -- Удаляем все ESP элементы
-            for player, espData in pairs(activeESPGuis) do
-                if espData.billboardGui then
-                    espData.billboardGui:Destroy()
-                end
-                if espData.highlight then
-                    espData.highlight:Destroy()
-                end
-            end
-            
-            -- Очищаем таблицы
-            activeESPGuis = {}
-            activeWeaponHighlights = {}
-            playerWeaponsCache = {}
-        end,
-        
-        Restart = function()
-            -- Останавливаем текущую версию
-            if heartbeatConnection then
-                heartbeatConnection:Disconnect()
-            end
-            if fastScanConnection then
-                fastScanConnection:Disconnect()
-            end
-            
-            -- Перезапускаем скрипт
-            initializeESP()
-        end
-    }
 end
 
--- Автоматическая инициализация при прямом выполнении
-if not _G.ESP_Initialized then
-    _G.ESP_Initialized = true
-    _G.ESP_Module = initializeESP()
-else
-    -- Если уже инициализирован, перезапускаем
-    if _G.ESP_Module then
-        _G.ESP_Module.Stop()
+-- Function to disable ESP
+local function disableESP()
+    if not ESPEnabled then return end
+    ESPEnabled = false
+    
+    print("ESP Disabled")
+    
+    -- Disconnect all event connections
+    if hintTextConnection then
+        hintTextConnection:Disconnect()
+        hintTextConnection = nil
     end
-    _G.ESP_Module = initializeESP()
+    
+    for _, connection in pairs(eventConnections) do
+        connection:Disconnect()
+    end
+    eventConnections = {}
+    
+    if mainLoopConnection then
+        mainLoopConnection:Disconnect()
+        mainLoopConnection = nil
+    end
+    
+    if fastScanConnection then
+        fastScanConnection:Disconnect()
+        fastScanConnection = nil
+    end
+    
+    if weaponMonitorConnection then
+        weaponMonitorConnection:Disconnect()
+        weaponMonitorConnection = nil
+    end
+    
+    -- Remove all ESP elements
+    for player, espData in pairs(activeESPGuis) do
+        if espData.billboardGui then
+            espData.billboardGui:Destroy()
+        end
+        if espData.highlight then
+            espData.highlight:Destroy()
+        end
+    end
+    activeESPGuis = {}
+    
+    -- Remove all weapon highlights
+    for tool, weaponData in pairs(activeWeaponHighlights) do
+        if weaponData.highlight then
+            weaponData.highlight:Destroy()
+        end
+    end
+    activeWeaponHighlights = {}
+    
+    -- Clear caches
+    playerWeaponsCache = {}
+    playersMatchingHints = {}
 end
 
--- Возвращаем функцию для загрузки через loadstring
-return initializeESP
+-- =============================================================================
+-- RAYFIELD GUI
+-- =============================================================================
+
+-- Create Rayfield window
+local Window = Rayfield:CreateWindow({
+    Name = "ESP Control Panel",
+    LoadingTitle = "ESP System",
+    LoadingSubtitle = "by YourName",
+    ConfigurationSaving = {
+        Enabled = true,
+        FolderName = "ESPConfig",
+        FileName = "Settings"
+    },
+    Discord = {
+        Enabled = false,
+        Invite = "noinvitelink",
+        RememberJoins = true
+    },
+    KeySystem = false,
+})
+
+-- Main tab
+local MainTab = Window:CreateTab("Main", 4483362458)
+
+-- Toggle for ESP
+local ESPToggle = MainTab:CreateToggle({
+    Name = "ESP Enabled",
+    CurrentValue = false,
+    Flag = "ESPEnabled",
+    Callback = function(Value)
+        if Value then
+            enableESP()
+        else
+            disableESP()
+        end
+    end,
+})
+
+-- Information section
+local InfoSection = MainTab:CreateSection("Information")
+MainTab:CreateLabel("ESP Features:")
+MainTab:CreateLabel("- Player highlighting with HP")
+MainTab:CreateLabel("- Weapon detection (Killer/Sheriff)")
+MainTab:CreateLabel("- Team identification")
+MainTab:CreateLabel("- Hint system integration")
+MainTab:CreateLabel("- Dropped weapon highlighting")
+
+-- Settings tab
+local SettingsTab = Window:CreateTab("Settings", 4483362458)
+
+-- Performance settings
+local PerformanceSection = SettingsTab:CreateSection("Performance")
+local UpdateRateSlider = SettingsTab:CreateSlider({
+    Name = "Update Rate (seconds)",
+    Range = {0.5, 5},
+    Increment = 0.5,
+    Suffix = "s",
+    CurrentValue = 1,
+    Flag = "UpdateRate",
+    Callback = function(Value)
+        -- This would need to be integrated into the update loop
+    end,
+})
+
+-- Visual settings
+local VisualSection = SettingsTab:CreateSection("Visual")
+local HighlightTransparencySlider = SettingsTab:CreateSlider({
+    Name = "Highlight Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = 0.7,
+    Flag = "HighlightTransparency",
+    Callback = function(Value)
+        for _, espData in pairs(activeESPGuis) do
+            if espData.highlight then
+                espData.highlight.FillTransparency = Value
+            end
+        end
+    end,
+})
+
+-- Buttons section
+local ButtonSection = SettingsTab:CreateSection("Controls")
+SettingsTab:CreateButton({
+    Name = "Refresh ESP",
+    Callback = function()
+        if ESPEnabled then
+            disableESP()
+            wait(0.1)
+            enableESP()
+        end
+    end,
+})
+
+SettingsTab:CreateButton({
+    Name = "Clear All ESP",
+    Callback = function()
+        disableESP()
+    end,
+})
+
+-- Initialize Rayfield
+Rayfield:LoadConfiguration()
