@@ -8,11 +8,14 @@ local localPlayer = Players.LocalPlayer
 -- Rayfield GUI
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 
--- ESP состояние
+-- ESP state
 local ESPEnabled = false
 
+-- Distance settings
+local MaxItemsDistance = 75 -- Distance for displaying items (default)
+
 -- Define weapon lists
-local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED"}
+local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17"} 
 
 -- Convert weapon lists to dictionaries for faster lookup
@@ -29,19 +32,19 @@ end
 
 -- Define teams and their members with unique colors
 local teamColors = {
-    ["Street Gang"] = Color3.fromRGB(255, 0, 0), -- Красный
-    ["Bratva"] = Color3.fromRGB(0, 0, 255), -- Синий
-    ["Nubagami"] = Color3.fromRGB(0, 255, 0), -- Зеленый
-    ["Heist crew"] = Color3.fromRGB(255, 255, 0), -- Желтый
-    ["Politsiya"] = Color3.fromRGB(0, 255, 255), -- Голубой
-    ["The Zoo"] = Color3.fromRGB(255, 0, 255), -- Розовый
-    ["The Trinity"] = Color3.fromRGB(255, 165, 0), -- Оранжевый
-    ["Hoboes"] = Color3.fromRGB(128, 0, 128), -- Фиолетовый
-    ["Hooligans"] = Color3.fromRGB(165, 42, 42), -- Коричневый
-    ["The Noobic Union"] = Color3.fromRGB(0, 128, 128), -- Бирюзовый
-    ["NETO"] = Color3.fromRGB(128, 128, 128), -- Серый
-    ["Juggernaut"] = Color3.fromRGB(139, 0, 0), -- Темно-красный
-    ["Robbers"] = Color3.fromRGB(255, 140, 0) -- Темно-оранжевый
+    ["Street Gang"] = Color3.fromRGB(255, 0, 0), -- Red
+    ["Bratva"] = Color3.fromRGB(0, 0, 255), -- Blue
+    ["Nubagami"] = Color3.fromRGB(0, 255, 0), -- Green
+    ["Heist crew"] = Color3.fromRGB(255, 255, 0), -- Yellow
+    ["Politsiya"] = Color3.fromRGB(0, 255, 255), -- Cyan
+    ["The Zoo"] = Color3.fromRGB(255, 0, 255), -- Pink
+    ["The Trinity"] = Color3.fromRGB(255, 165, 0), -- Orange
+    ["Hoboes"] = Color3.fromRGB(128, 0, 128), -- Purple
+    ["Hooligans"] = Color3.fromRGB(165, 42, 42), -- Brown
+    ["The Noobic Union"] = Color3.fromRGB(0, 128, 128), -- Teal
+    ["NETO"] = Color3.fromRGB(128, 128, 128), -- Gray
+    ["Juggernaut"] = Color3.fromRGB(139, 0, 0), -- Dark Red
+    ["Robbers"] = Color3.fromRGB(255, 140, 0) -- Dark Orange
 }
 
 local teams = {
@@ -426,20 +429,20 @@ end
 -- Function to determine weapon type and color (guncheck mode)
 local function getWeaponColor(weapons)
     if #weapons == 0 then
-        return Color3.fromRGB(0, 255, 0) -- Зеленый для отсутствия оружия
+        return Color3.fromRGB(0, 255, 0) -- Green for no weapons
     end
 
     for _, weaponName in ipairs(weapons) do
         if killerWeaponsLookup[weaponName] then
-            return Color3.fromRGB(255, 0, 0) -- Красный для киллера
+            return Color3.fromRGB(255, 0, 0) -- Red for killer
         end
 
         if sheriffWeaponsLookup[weaponName] then
-            return Color3.fromRGB(0, 0, 255) -- Синий для шерифа
+            return Color3.fromRGB(0, 0, 255) -- Blue for sheriff
         end
     end
 
-    return Color3.fromRGB(0, 255, 0) -- Зеленый для других оружий
+    return Color3.fromRGB(0, 255, 0) -- Green for other weapons
 end
 
 -- Function to get player's team based on character display name
@@ -470,9 +473,9 @@ local function getPlayerColor(player)
         end
         
         if hasKillerOrSheriffWeapon then
-            return Color3.fromRGB(128, 0, 128) -- Фиолетовый для киллера/шерифа с подсказкой
+            return Color3.fromRGB(128, 0, 128) -- Purple for killer/sheriff with hint
         else
-            return Color3.fromRGB(255, 255, 0) -- Желтый для обычного игрока с подсказкой
+            return Color3.fromRGB(255, 255, 0) -- Yellow for regular player with hint
         end
     end
     
@@ -480,12 +483,12 @@ local function getPlayerColor(player)
     local rolesFound = checkForRoles()
     
     if rolesFound then
-        -- Режим команд: используем уникальный цвет для каждой команды
+        -- Team mode: use unique color for each team
         local playerTeam = getPlayerTeam(player)
         if playerTeam and teamColors[playerTeam] then
             return teamColors[playerTeam]
         else
-            -- Если команда не определена, используем белый цвет
+            -- If team is not defined, use white color
             return Color3.fromRGB(255, 255, 255)
         end
     else
@@ -507,18 +510,16 @@ local function getDistanceToPlayer(player)
     return (localRoot.Position - playerRoot.Position).Magnitude
 end
 
--- Function to format weapons list with distance check
+-- MODIFIED: Function to format weapons list with configurable distance
 local function formatWeaponsList(weapons, distance)
-    local MAX_ITEMS_DISTANCE = 75 -- Дистанция для отображения предметов
-    
-    if distance > MAX_ITEMS_DISTANCE then
-        return "..." -- Показываем многоточие, если игрок далеко
+    if distance > MaxItemsDistance then
+        return "..." -- Show ellipsis if player is far away
     end
     
     if #weapons == 0 then
-        return "Нет предметов"
+        return "No items"
     else
-        -- Показываем все предметы, если игрок близко
+        -- Show all items if player is close
         return table.concat(weapons, ", ")
     end
 end
@@ -603,12 +604,12 @@ local function highlightDroppedWeapon(tool)
     if activeWeaponHighlights[tool] then return end
     
     if tool:IsDescendantOf(Workspace) and not isToolEquippedByPlayer(tool) then
-        local weaponColor = Color3.fromRGB(0, 255, 0) -- Зеленый по умолчанию
+        local weaponColor = Color3.fromRGB(0, 255, 0) -- Green by default
         
         if killerWeaponsLookup[tool.Name] then
-            weaponColor = Color3.fromRGB(255, 0, 0) -- Красный для киллера
+            weaponColor = Color3.fromRGB(255, 0, 0) -- Red for killer
         elseif sheriffWeaponsLookup[tool.Name] then
-            weaponColor = Color3.fromRGB(0, 0, 255) -- Синий для шерифа
+            weaponColor = Color3.fromRGB(0, 0, 255) -- Blue for sheriff
         else
             return
         end
@@ -676,7 +677,24 @@ local function monitorWorkspaceForWeapons()
     return weaponConnection
 end
 
--- MAIN FUNCTION: Create ESP for a player - БЫСТРАЯ ВЕРСИЯ БЕЗ ДИСТАНЦИОННЫХ ОГРАНИЧЕНИЙ
+-- Function to update all ESP displays with new distance settings
+local function updateAllESPDisplays()
+    for player, espData in pairs(activeESPGuis) do
+        if player and player.Character and espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
+            local weapons = getPlayerWeapons(player)
+            local distance = getDistanceToPlayer(player)
+            local currentHealth, maxHealth = getPlayerHealth(player)
+            local displayText = createDisplayText(player.Name, weapons, distance, currentHealth, maxHealth)
+            
+            local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
+            if textLabel then
+                textLabel.Text = displayText
+            end
+        end
+    end
+end
+
+-- MAIN FUNCTION: Create ESP for a player - FAST VERSION WITHOUT DISTANCE LIMITATIONS
 local function createPlayerESP(player)
     if not ESPEnabled then return end
     if player == localPlayer then return end
@@ -704,7 +722,7 @@ local function createPlayerESP(player)
             if textLabel then
                 textLabel.Text = displayText
                 textLabel.TextColor3 = color
-                -- Убрано изменение цвета текста в зависимости от здоровья
+                -- Removed text color change based on health
             end
         end
         
@@ -718,14 +736,14 @@ local function createPlayerESP(player)
         return
     end
 
-    -- Create new BillboardGui БЕЗ ДИСТАНЦИОННЫХ ОГРАНИЧЕНИЙ
+    -- Create new BillboardGui WITHOUT DISTANCE LIMITATIONS
     local billboardGui = Instance.new("BillboardGui")
     billboardGui.Name = "PlayerESP"
     billboardGui.Adornee = head
-    billboardGui.Size = UDim2.new(0, 200, 0, 70) -- Увеличили высоту для отображения здоровья
+    billboardGui.Size = UDim2.new(0, 200, 0, 70) -- Increased height for health display
     billboardGui.StudsOffset = Vector3.new(0, 2.5, 0)
     billboardGui.AlwaysOnTop = true
-    -- УБИРАЕМ MaxDistance для отображения на любой дистанции
+    -- REMOVED MaxDistance for display at any distance
     billboardGui.Enabled = true
     billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
     billboardGui.Parent = head
@@ -763,7 +781,7 @@ local function createPlayerESP(player)
     }
 end
 
--- Function to handle character added event - МГНОВЕННАЯ ВЕРСИЯ
+-- Function to handle character added event - INSTANT VERSION
 local function onCharacterAdded(character, player)
     if not ESPEnabled then return end
     
@@ -780,7 +798,7 @@ local function onCharacterAdded(character, player)
     -- Clear weapons cache for this player
     playerWeaponsCache[player] = nil
     
-    -- МГНОВЕННОЕ СОЗДАНИЕ ESP - без задержек
+    -- INSTANT ESP CREATION - without delays
     createPlayerESP(player)
 end
 
@@ -793,7 +811,7 @@ local function onPlayerAdded(player)
     end)
     
     if player.Character then
-        -- МГНОВЕННОЕ СОЗДАНИЕ ESP для существующих игроков
+        -- INSTANT ESP CREATION for existing players
         onCharacterAdded(player.Character, player)
     end
 end
@@ -837,7 +855,7 @@ local function enableESP()
     eventConnections.playerAdded = Players.PlayerAdded:Connect(onPlayerAdded)
     eventConnections.playerRemoving = Players.PlayerRemoving:Connect(onPlayerRemoving)
     
-    -- МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ всех игроков
+    -- INSTANT INITIALIZATION of all players
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= localPlayer then
             onPlayerAdded(player)
@@ -847,7 +865,7 @@ local function enableESP()
     -- Start monitoring for dropped weapons
     weaponMonitorConnection = monitorWorkspaceForWeapons()
     
-    -- БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ
+    -- FAST UPDATE CYCLE
     local updateCounter = 0
     local cleanupCounter = 0
     
@@ -857,11 +875,11 @@ local function enableESP()
         updateCounter = updateCounter + deltaTime
         cleanupCounter = cleanupCounter + deltaTime
         
-        -- БЫСТРОЕ ОБНОВЛЕНИЕ ESP (каждую секунду)
+        -- FAST ESP UPDATE (every second)
         if updateCounter >= 1 then
             updateCounter = 0
             
-            -- МГНОВЕННОЕ ОБНОВЛЕНИЕ ВСЕХ ИГРОКОВ
+            -- INSTANT UPDATE OF ALL PLAYERS
             for player, _ in pairs(activeESPGuis) do
                 if player and player.Parent and player.Character then
                     createPlayerESP(player) -- Update existing ESP
@@ -869,20 +887,20 @@ local function enableESP()
             end
         end
         
-        -- Cleanup old highlights каждые 5 секунд
+        -- Cleanup old highlights every 5 seconds
         if cleanupCounter >= 4 then
             cleanupCounter = 0
             cleanupOldHighlights()
         end
     end)
     
-    -- ДОПОЛНИТЕЛЬНЫЙ МГНОВЕННЫЙ СКАН ДЛЯ НОВЫХ ИГРОКОВ
+    -- ADDITIONAL INSTANT SCAN FOR NEW PLAYERS
     fastScanConnection = RunService.Heartbeat:Connect(function()
         if not ESPEnabled then return end
         
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= localPlayer and not activeESPGuis[player] and player.Character then
-                -- МГНОВЕННО создаем ESP для игроков, у которых еще нет ESP
+                -- INSTANTLY create ESP for players who don't have ESP yet
                 createPlayerESP(player)
             end
         end
@@ -997,6 +1015,24 @@ MainTab:CreateLabel("- Dropped weapon highlighting")
 -- Settings tab
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
+-- Distance settings section
+local DistanceSection = SettingsTab:CreateSection("Distance Settings")
+
+-- Slider for item display distance
+local ItemDistanceSlider = SettingsTab:CreateSlider({
+    Name = "Item Display Distance",
+    Range = {10, 200},
+    Increment = 5,
+    Suffix = " studs",
+    CurrentValue = MaxItemsDistance,
+    Flag = "ItemDisplayDistance",
+    Callback = function(Value)
+        MaxItemsDistance = Value
+        -- Immediately update all ESP displays with new distance setting
+        updateAllESPDisplays()
+    end,
+})
+
 -- Performance settings
 local PerformanceSection = SettingsTab:CreateSection("Performance")
 local UpdateRateSlider = SettingsTab:CreateSlider({
@@ -1048,6 +1084,12 @@ SettingsTab:CreateButton({
         disableESP()
     end,
 })
+
+-- Information about distance settings
+local DistanceInfoSection = SettingsTab:CreateSection("Distance Info")
+SettingsTab:CreateLabel("Item Distance: determines at what distance")
+SettingsTab:CreateLabel("player inventory items are displayed.")
+SettingsTab:CreateLabel("If distance is exceeded, '...' is shown")
 
 -- Initialize Rayfield
 Rayfield:LoadConfiguration()
