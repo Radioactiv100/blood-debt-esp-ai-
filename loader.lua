@@ -199,7 +199,7 @@ local function getPlayerWeapons(player)
     playerWeaponsCache[player] = {
         weapons = weapons,
         time = currentTime
-    }
+    end
     
     return weapons
 end
@@ -570,58 +570,117 @@ local function onPlayerRemoving(player)
     playerWeaponsCache[player] = nil
 end
 
--- INITIALIZATION
-print("Instant ESP Script with HP Display, Distance-Based Item Display and New Teams Initialized")
+-- Функция для загрузки через loadstring
+local function initializeESP()
+    print("Instant ESP Script with HP Display, Distance-Based Item Display and New Teams Initialized")
 
--- МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ всех игроков
-for _, player in ipairs(Players:GetPlayers()) do
-    if player ~= localPlayer then
-        onPlayerAdded(player)
+    -- МГНОВЕННАЯ ИНИЦИАЛИЗАЦИЯ всех игроков
+    for _, player in ipairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            onPlayerAdded(player)
+        end
     end
-end
 
--- SET UP EVENT HANDLERS
-Players.PlayerAdded:Connect(onPlayerAdded)
-Players.PlayerRemoving:Connect(onPlayerRemoving)
+    -- SET UP EVENT HANDLERS
+    Players.PlayerAdded:Connect(onPlayerAdded)
+    Players.PlayerRemoving:Connect(onPlayerRemoving)
 
--- Start monitoring for dropped weapons
-task.wait(1)
-monitorWorkspaceForWeapons()
+    -- Start monitoring for dropped weapons
+    task.wait(1)
+    monitorWorkspaceForWeapons()
 
--- БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ
-local updateCounter = 0
-local cleanupCounter = 0
+    -- БЫСТРЫЙ ЦИКЛ ОБНОВЛЕНИЯ
+    local updateCounter = 0
+    local cleanupCounter = 0
 
-RunService.Heartbeat:Connect(function(deltaTime)
-    updateCounter = updateCounter + deltaTime
-    cleanupCounter = cleanupCounter + deltaTime
-    
-    -- БЫСТРОЕ ОБНОВЛЕНИЕ ESP (каждую секунду)
-    if updateCounter >= 1 then
-        updateCounter = 0
+    local heartbeatConnection
+    heartbeatConnection = RunService.Heartbeat:Connect(function(deltaTime)
+        updateCounter = updateCounter + deltaTime
+        cleanupCounter = cleanupCounter + deltaTime
         
-        -- МГНОВЕННОЕ ОБНОВЛЕНИЕ ВСЕХ ИГРОКОВ
-        for player, _ in pairs(activeESPGuis) do
-            if player and player.Parent and player.Character then
-                createPlayerESP(player) -- Update existing ESP
+        -- БЫСТРОЕ ОБНОВЛЕНИЕ ESP (каждую секунду)
+        if updateCounter >= 1 then
+            updateCounter = 0
+            
+            -- МГНОВЕННОЕ ОБНОВЛЕНИЕ ВСЕХ ИГРОКОВ
+            for player, _ in pairs(activeESPGuis) do
+                if player and player.Parent and player.Character then
+                    createPlayerESP(player) -- Update existing ESP
+                end
             end
         end
-    end
-    
-    -- Cleanup old highlights каждые 5 секунд
-    if cleanupCounter >= 4 then
-        cleanupCounter = 0
-        cleanupOldHighlights()
-    end
-end)
-
--- ДОПОЛНИТЕЛЬНЫЙ МГНОВЕННЫЙ СКАН ДЛЯ НОВЫХ ИГРОКОВ
-local fastScanConnection
-fastScanConnection = RunService.Heartbeat:Connect(function()
-    for _, player in ipairs(Players:GetPlayers()) do
-        if player ~= localPlayer and not activeESPGuis[player] and player.Character then
-            -- МГНОВЕННО создаем ESP для игроков, у которых еще нет ESP
-            createPlayerESP(player)
+        
+        -- Cleanup old highlights каждые 5 секунд
+        if cleanupCounter >= 4 then
+            cleanupCounter = 0
+            cleanupOldHighlights()
         end
-    end
-end)
+    end)
+
+    -- ДОПОЛНИТЕЛЬНЫЙ МГНОВЕННЫЙ СКАН ДЛЯ НОВЫХ ИГРОКОВ
+    local fastScanConnection
+    fastScanConnection = RunService.Heartbeat:Connect(function()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer and not activeESPGuis[player] and player.Character then
+                -- МГНОВЕННО создаем ESP для игроков, у которых еще нет ESP
+                createPlayerESP(player)
+            end
+        end
+    end)
+
+    -- Возвращаем функции для управления скриптом
+    return {
+        Stop = function()
+            -- Останавливаем все соединения
+            if heartbeatConnection then
+                heartbeatConnection:Disconnect()
+            end
+            if fastScanConnection then
+                fastScanConnection:Disconnect()
+            end
+            
+            -- Удаляем все ESP элементы
+            for player, espData in pairs(activeESPGuis) do
+                if espData.billboardGui then
+                    espData.billboardGui:Destroy()
+                end
+                if espData.highlight then
+                    espData.highlight:Destroy()
+                end
+            end
+            
+            -- Очищаем таблицы
+            activeESPGuis = {}
+            activeWeaponHighlights = {}
+            playerWeaponsCache = {}
+        end,
+        
+        Restart = function()
+            -- Останавливаем текущую версию
+            if heartbeatConnection then
+                heartbeatConnection:Disconnect()
+            end
+            if fastScanConnection then
+                fastScanConnection:Disconnect()
+            end
+            
+            -- Перезапускаем скрипт
+            initializeESP()
+        end
+    }
+end
+
+-- Автоматическая инициализация при прямом выполнении
+if not _G.ESP_Initialized then
+    _G.ESP_Initialized = true
+    _G.ESP_Module = initializeESP()
+else
+    -- Если уже инициализирован, перезапускаем
+    if _G.ESP_Module then
+        _G.ESP_Module.Stop()
+    end
+    _G.ESP_Module = initializeESP()
+end
+
+-- Возвращаем функцию для загрузки через loadstring
+return initializeESP
