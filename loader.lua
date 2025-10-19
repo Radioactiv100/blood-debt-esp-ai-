@@ -1,9 +1,10 @@
--- LocalScript в StarterPlayer.StarterPlayerScripts
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
 local TweenService = game:GetService("TweenService")
+local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
+local Camera = workspace.CurrentCamera
 
 -- Rayfield GUI
 local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
@@ -15,7 +16,7 @@ local ESPEnabled = false
 local MaxItemsDistance = 75 -- Distance for displaying items (default)
 
 -- Define weapon lists
-local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED"}
+local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED"} 
 
 -- Convert weapon lists to dictionaries for faster lookup
@@ -965,14 +966,357 @@ local function disableESP()
 end
 
 -- =============================================================================
+-- ADVANCED TEAM CHECK SYSTEM
+-- =============================================================================
+
+-- Function to get player's weapon type
+local function getPlayerWeaponType(player)
+    local weapons = getPlayerWeapons(player)
+    
+    if #weapons == 0 then
+        return "unarmed" -- Зеленый
+    end
+
+    for _, weaponName in ipairs(weapons) do
+        if killerWeaponsLookup[weaponName] then
+            return "killer" -- Красный
+        end
+
+        if sheriffWeaponsLookup[weaponName] then
+            return "sheriff" -- Синий
+        end
+    end
+
+    return "unarmed" -- Зеленый для обычного оружия
+end
+
+-- NEW TEAM CHECK FUNCTION
+local function canAimAtTarget(localPlayer, targetPlayer)
+    local localTeam = getPlayerTeam(localPlayer)
+    local targetTeam = getPlayerTeam(targetPlayer)
+    
+    -- Если у меня определена команда
+    if localTeam then
+        -- Не могу аимиться на игроков из своей команды
+        if targetTeam and localTeam == targetTeam then
+            return false
+        end
+        -- Могу аимиться на игроков из других команд
+        return true
+    end
+    
+    -- Если команда не определена (gun check режим)
+    local localWeaponType = getPlayerWeaponType(localPlayer)
+    local targetWeaponType = getPlayerWeaponType(targetPlayer)
+    
+    if localWeaponType == "unarmed" or localWeaponType == "sheriff" then
+        -- Безоружный или шериф: не может аимиться на безоружных и шерифов
+        if targetWeaponType == "unarmed" or targetWeaponType == "sheriff" then
+            return false
+        end
+        -- Но может аимиться на киллеров
+        return targetWeaponType == "killer"
+    elseif localWeaponType == "killer" then
+        -- Киллер: может аимиться на всех
+        return true
+    end
+    
+    -- Если роль не определена - можно аимиться на всех
+    return true
+end
+
+-- =============================================================================
+-- AIMBOT SYSTEM WITH ADVANCED TEAM CHECK
+-- =============================================================================
+
+-- Настройки аимбота
+local AimbotSettings = {
+    Enabled = false,
+    TeamCheck = true, -- Включено по умолчанию
+    WallCheck = true,
+    HealthCheck = true,
+    MinHealth = 5,
+    TriggerKey = "MouseButton2",
+    LockPart = "Head",
+    FOV = 90,
+    Smoothness = 0.0,
+    
+    SwitchEnabled = false,
+    SwitchInterval = {Min = 2, Max = 8},
+    SwitchParts = {"Head", "Torso"},
+    
+    MaxDistance = 1000,
+}
+
+-- Переменные для работы аимбота
+local AimbotEnabled = false
+local CurrentTarget = nil
+local LastSwitchTime = tick()
+local NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
+local CurrentLockPart = AimbotSettings.LockPart
+local VisibilityCache = {}
+local LastWallCheckTime = 0
+local LastTargetUpdateTime = 0
+local renderSteppedConnection = nil
+
+-- Кэширование часто используемых объектов
+local CameraViewportSize = Camera.ViewportSize
+
+-- Создание круга FOV
+local FOVCircle = Drawing.new("Circle")
+FOVCircle.Visible = false
+FOVCircle.Radius = AimbotSettings.FOV
+FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+FOVCircle.Thickness = 2
+FOVCircle.Filled = false
+FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, CameraViewportSize.Y / 2)
+
+-- Функция для получения текущей части тела
+local function GetCurrentLockPart()
+    if AimbotSettings.SwitchEnabled then
+        return CurrentLockPart
+    else
+        return AimbotSettings.LockPart
+    end
+end
+
+-- Проверка видимости
+local function IsVisible(target)
+    if not AimbotSettings.WallCheck then return true end
+    if not target or not target.Character then return false end
+    
+    local currentTime = tick()
+    
+    if VisibilityCache[target] and currentTime - VisibilityCache[target].time < 0.1 then
+        return VisibilityCache[target].visible
+    end
+    
+    local origin = Camera.CFrame.Position
+    local targetPart = target.Character:FindFirstChild(GetCurrentLockPart())
+    if not targetPart then 
+        VisibilityCache[target] = {visible = false, time = currentTime}
+        return false 
+    end
+    
+    local targetPosition = targetPart.Position
+    local direction = (targetPosition - origin)
+    local distance = direction.Magnitude
+    
+    if distance > AimbotSettings.MaxDistance then
+        VisibilityCache[target] = {visible = false, time = currentTime}
+        return false
+    end
+    
+    local raycastParams = RaycastParams.new()
+    raycastParams.FilterType = Enum.RaycastFilterType.Blacklist
+    raycastParams.FilterDescendantsInstances = {localPlayer.Character, target.Character}
+    
+    local result = workspace:Raycast(origin, direction.Unit * distance, raycastParams)
+    
+    local isVisible = (result == nil)
+    
+    VisibilityCache[target] = {visible = isVisible, time = currentTime}
+    return isVisible
+end
+
+-- Функция очистки кэша
+local function CleanupVisibilityCache()
+    local currentTime = tick()
+    local cleanupThreshold = 0.5
+    
+    for player, cache in pairs(VisibilityCache) do
+        if not player.Parent or currentTime - cache.time > cleanupThreshold then
+            VisibilityCache[player] = nil
+        end
+    end
+end
+
+-- Запуск периодической очистки кэша
+task.spawn(function()
+    while task.wait(10) do
+        CleanupVisibilityCache()
+    end
+end)
+
+-- НОВАЯ ФУНКЦИЯ ПРОВЕРКИ ЦЕЛИ С TEAM CHECK
+local function IsValidTarget(player)
+    if not player.Character then return false end
+    
+    -- Проверка здоровья
+    if AimbotSettings.HealthCheck then
+        local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
+        if not humanoid or humanoid.Health < AimbotSettings.MinHealth then
+            return false
+        end
+    end
+    
+    -- Проверка дистанции
+    local targetPart = player.Character:FindFirstChild(GetCurrentLockPart())
+    if targetPart then
+        local distance = (targetPart.Position - Camera.CFrame.Position).Magnitude
+        if distance > AimbotSettings.MaxDistance then
+            return false
+        end
+    else
+        return false
+    end
+    
+    -- НОВАЯ СИСТЕМА TEAM CHECK
+    if AimbotSettings.TeamCheck then
+        return canAimAtTarget(localPlayer, player)
+    end
+    
+    -- Если TeamCheck выключен, можно аимиться на всех
+    return true
+end
+
+local function GetClosestTarget()
+    if not AimbotSettings.Enabled then return nil end
+    
+    local closestTarget = nil
+    local shortestDistance = AimbotSettings.FOV
+    local currentTime = tick()
+    
+    local mousePos = UserInputService:GetMouseLocation()
+    local cameraPos = Camera.CFrame.Position
+
+    for _, player in pairs(Players:GetPlayers()) do
+        if player ~= localPlayer then
+            if not IsValidTarget(player) then
+                continue
+            end
+            
+            local targetPart = player.Character:FindFirstChild(GetCurrentLockPart())
+            if targetPart then
+                local distanceToTarget = (targetPart.Position - cameraPos).Magnitude
+                if distanceToTarget > AimbotSettings.MaxDistance then
+                    continue
+                end
+                
+                local screenPoint, onScreen = Camera:WorldToViewportPoint(targetPart.Position)
+                if onScreen then
+                    local distance = (Vector2.new(screenPoint.X, screenPoint.Y) - mousePos).Magnitude
+                    
+                    if distance < shortestDistance and distance <= AimbotSettings.FOV then
+                        if IsVisible(player) then
+                            shortestDistance = distance
+                            closestTarget = player
+                        end
+                    end
+                end
+            end
+        end
+    end
+    
+    if closestTarget then
+        FOVCircle.Color = Color3.fromRGB(255, 0, 0)
+    else
+        FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+    end
+    
+    return closestTarget
+end
+
+local function SwitchLockPart()
+    if not AimbotSettings.SwitchEnabled then return end
+    
+    local currentIndex = table.find(AimbotSettings.SwitchParts, CurrentLockPart) or 1
+    local nextIndex = (currentIndex % #AimbotSettings.SwitchParts) + 1
+    CurrentLockPart = AimbotSettings.SwitchParts[nextIndex]
+    LastSwitchTime = tick()
+    NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
+    
+    VisibilityCache = {}
+end
+
+local function AimAtTarget(target)
+    if not target or not target.Character then return end
+    
+    local targetPart = target.Character:FindFirstChild(GetCurrentLockPart())
+    if not targetPart then return end
+    
+    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+end
+
+-- ОСНОВНОЙ ЦИКЛ АИМБОТА
+local frameCounter = 0
+local function startAimbotLoop()
+    if renderSteppedConnection then
+        renderSteppedConnection:Disconnect()
+    end
+    
+    renderSteppedConnection = RunService.RenderStepped:Connect(function()
+        FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, CameraViewportSize.Y / 2)
+        
+        frameCounter = frameCounter + 1
+        
+        if frameCounter % 3 == 0 then
+            if AimbotSettings.SwitchEnabled and tick() - LastSwitchTime >= NextSwitchTime then
+                SwitchLockPart()
+            end
+            
+            local currentTime = tick()
+            if AimbotEnabled and CurrentTarget and AimbotSettings.Enabled then
+                if currentTime - LastWallCheckTime >= 0.1 then
+                    LastWallCheckTime = currentTime
+                    
+                    if not IsVisible(CurrentTarget) then
+                        CurrentTarget = nil
+                        FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+                    end
+                end
+            end
+        end
+        
+        if AimbotEnabled and AimbotSettings.Enabled then
+            if not CurrentTarget and tick() - LastTargetUpdateTime >= 0.1 then
+                LastTargetUpdateTime = tick()
+                CurrentTarget = GetClosestTarget()
+            end
+            
+            if CurrentTarget then
+                AimAtTarget(CurrentTarget)
+            end
+        end
+    end)
+end
+
+-- Очистка при изменении персонажа
+localPlayer.CharacterAdded:Connect(function()
+    VisibilityCache = {}
+end)
+
+-- Обработка ввода для аимбота
+UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType[AimbotSettings.TriggerKey] and AimbotSettings.Enabled then
+        AimbotEnabled = true
+        CurrentTarget = GetClosestTarget()
+        LastTargetUpdateTime = tick()
+    end
+end)
+
+UserInputService.InputEnded:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.UserInputType == Enum.UserInputType[AimbotSettings.TriggerKey] then
+        AimbotEnabled = false
+        CurrentTarget = nil
+        FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+        VisibilityCache = {}
+    end
+end)
+
+-- =============================================================================
 -- RAYFIELD GUI
 -- =============================================================================
 
 -- Create Rayfield window
 local Window = Rayfield:CreateWindow({
-    Name = "ESP Control Panel",
-    LoadingTitle = "ESP System",
-    LoadingSubtitle = "by YourName",
+    Name = "ESP & Aimbot",
+    LoadingTitle = "ESP & Aimbot",
+    LoadingSubtitle = "by AI",
     ConfigurationSaving = {
         Enabled = true,
         FolderName = "ESPConfig",
@@ -1091,5 +1435,190 @@ SettingsTab:CreateLabel("Item Distance: determines at what distance")
 SettingsTab:CreateLabel("player inventory items are displayed.")
 SettingsTab:CreateLabel("If distance is exceeded, '...' is shown")
 
+-- =============================================================================
+-- AIMBOT TAB
+-- =============================================================================
+
+local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
+
+-- Main Aimbot Toggle
+AimbotTab:CreateToggle({
+    Name = "Aimbot Enabled",
+    CurrentValue = AimbotSettings.Enabled,
+    Flag = "AimbotEnabled",
+    Callback = function(Value)
+        AimbotSettings.Enabled = Value
+        FOVCircle.Visible = Value
+        if not Value then
+            AimbotEnabled = false
+            CurrentTarget = nil
+            FOVCircle.Color = Color3.fromRGB(0, 255, 0)
+        else
+            startAimbotLoop()
+        end
+    end,
+})
+
+-- Team Check Settings
+AimbotTab:CreateToggle({
+    Name = "Team Check",
+    CurrentValue = AimbotSettings.TeamCheck,
+    Flag = "AimbotTeamCheck",
+    Callback = function(Value)
+        AimbotSettings.TeamCheck = Value
+    end,
+})
+
+AimbotTab:CreateLabel("Team Check Rules:")
+AimbotTab:CreateLabel("- If you have a team: don't aim at teammates")
+AimbotTab:CreateLabel("- If no team (gun check mode):")
+AimbotTab:CreateLabel("  • Unarmed/Sheriff: can aim at killers only")
+AimbotTab:CreateLabel("  • Killer: can aim at everyone")
+AimbotTab:CreateLabel("  • No team detected: can aim at everyone")
+
+-- FOV Settings
+AimbotTab:CreateSlider({
+    Name = "FOV Radius",
+    Range = {10, 300},
+    Increment = 5,
+    Suffix = " pixels",
+    CurrentValue = AimbotSettings.FOV,
+    Flag = "AimbotFOV",
+    Callback = function(Value)
+        AimbotSettings.FOV = Value
+        FOVCircle.Radius = Value
+    end,
+})
+
+AimbotTab:CreateToggle({
+    Name = "Health Check",
+    CurrentValue = AimbotSettings.HealthCheck,
+    Flag = "AimbotHealthCheck",
+    Callback = function(Value)
+        AimbotSettings.HealthCheck = Value
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "Minimum Health",
+    Range = {0, 100},
+    Increment = 1,
+    Suffix = " HP",
+    CurrentValue = AimbotSettings.MinHealth,
+    Flag = "AimbotMinHealth",
+    Callback = function(Value)
+        AimbotSettings.MinHealth = Value
+    end,
+})
+
+-- Wall Check Settings
+AimbotTab:CreateToggle({
+    Name = "Wall Check",
+    CurrentValue = AimbotSettings.WallCheck,
+    Flag = "AimbotWallCheck",
+    Callback = function(Value)
+        AimbotSettings.WallCheck = Value
+        VisibilityCache = {}
+    end,
+})
+
+AimbotTab:CreateLabel("Wall Check: Aimbot only works when target is visible")
+
+-- Distance Settings
+AimbotTab:CreateSlider({
+    Name = "Max Distance",
+    Range = {50, 2000},
+    Increment = 25,
+    Suffix = " studs",
+    CurrentValue = AimbotSettings.MaxDistance,
+    Flag = "AimbotMaxDistance",
+    Callback = function(Value)
+        AimbotSettings.MaxDistance = Value
+    end,
+})
+
+-- Lock Part Settings
+AimbotTab:CreateDropdown({
+    Name = "Lock Part",
+    Options = {"Head", "HumanoidRootPart", "Torso"},
+    CurrentValue = AimbotSettings.LockPart,
+    Flag = "AimbotLockPart",
+    Callback = function(Value)
+        AimbotSettings.LockPart = Value
+        VisibilityCache = {}
+        
+        -- Если случайный режим выключен, сразу обновляем текущую часть
+        if not AimbotSettings.SwitchEnabled then
+            CurrentLockPart = Value
+        end
+    end,
+})
+
+-- Random Aim Part Settings
+AimbotTab:CreateToggle({
+    Name = "Random Aim Part",
+    CurrentValue = AimbotSettings.SwitchEnabled,
+    Flag = "AimbotSwitchEnabled",
+    Callback = function(Value)
+        AimbotSettings.SwitchEnabled = Value
+        if Value then
+            LastSwitchTime = tick()
+            NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
+        else
+            -- При выключении случайного режима используем выбранную часть тела
+            CurrentLockPart = AimbotSettings.LockPart
+        end
+        VisibilityCache = {}
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "Min Switch Time",
+    Range = {1, 10},
+    Increment = 0.5,
+    Suffix = " seconds",
+    CurrentValue = AimbotSettings.SwitchInterval.Min,
+    Flag = "AimbotSwitchMin",
+    Callback = function(Value)
+        AimbotSettings.SwitchInterval.Min = Value
+        if AimbotSettings.SwitchInterval.Max < Value then
+            AimbotSettings.SwitchInterval.Max = Value
+        end
+    end,
+})
+
+AimbotTab:CreateSlider({
+    Name = "Max Switch Time",
+    Range = {1, 20},
+    Increment = 0.5,
+    Suffix = " seconds",
+    CurrentValue = AimbotSettings.SwitchInterval.Max,
+    Flag = "AimbotSwitchMax",
+    Callback = function(Value)
+        AimbotSettings.SwitchInterval.Max = Value
+        if AimbotSettings.SwitchInterval.Min > Value then
+            AimbotSettings.SwitchInterval.Min = Value
+        end
+    end,
+})
+
+-- FOV Circle Visibility
+AimbotTab:CreateToggle({
+    Name = "Show FOV Circle",
+    CurrentValue = FOVCircle.Visible,
+    Flag = "ShowFOVCircle",
+    Callback = function(Value)
+        FOVCircle.Visible = Value
+    end,
+})
+
+-- Trigger Key Info
+AimbotTab:CreateSection("Trigger Key")
+AimbotTab:CreateLabel("Current Trigger Key: " .. AimbotSettings.TriggerKey)
+AimbotTab:CreateLabel("Hold this key to activate aimbot")
+
 -- Initialize Rayfield
 Rayfield:LoadConfiguration()
+
+-- Start the aimbot loop
+startAimbotLoop()
