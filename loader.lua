@@ -13,11 +13,11 @@ local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
 local ESPEnabled = false
 
 -- Distance settings
-local MaxItemsDistance = 75 -- Distance for displaying items (default)
+local MaxItemsDistance = 75
 
 -- Define weapon lists
-local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911"}
-local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED"} 
+local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911", "RR-LCP", "DarkSteel K1911", "Door'bler TIGERSTRIPES", "HEARBALLA", "RR-LCP10", "KamatovDRUM", "Charcoal Steel SKORPION", "SKORPION 'AMIRNOV", "Rosen Nagan", "M-1020"}
+local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED", "RR-Snubby10"} 
 
 -- Convert weapon lists to dictionaries for faster lookup
 local killerWeaponsLookup = {}
@@ -33,19 +33,19 @@ end
 
 -- Define teams and their members with unique colors
 local teamColors = {
-    ["Street Gang"] = Color3.fromRGB(255, 0, 0), -- Red
-    ["Bratva"] = Color3.fromRGB(0, 0, 255), -- Blue
-    ["Nubagami"] = Color3.fromRGB(0, 255, 0), -- Green
-    ["Heist crew"] = Color3.fromRGB(255, 255, 0), -- Yellow
-    ["Politsiya"] = Color3.fromRGB(0, 255, 255), -- Cyan
-    ["The Zoo"] = Color3.fromRGB(255, 0, 255), -- Pink
-    ["The Trinity"] = Color3.fromRGB(255, 165, 0), -- Orange
-    ["Hoboes"] = Color3.fromRGB(128, 0, 128), -- Purple
-    ["Hooligans"] = Color3.fromRGB(165, 42, 42), -- Brown
-    ["The Noobic Union"] = Color3.fromRGB(0, 128, 128), -- Teal
-    ["NETO"] = Color3.fromRGB(128, 128, 128), -- Gray
-    ["Juggernaut"] = Color3.fromRGB(139, 0, 0), -- Dark Red
-    ["Robbers"] = Color3.fromRGB(255, 140, 0) -- Dark Orange
+    ["Street Gang"] = Color3.fromRGB(255, 0, 0),
+    ["Bratva"] = Color3.fromRGB(0, 0, 255),
+    ["Nubagami"] = Color3.fromRGB(0, 255, 0),
+    ["Heist crew"] = Color3.fromRGB(255, 255, 0),
+    ["Politsiya"] = Color3.fromRGB(0, 255, 255),
+    ["The Zoo"] = Color3.fromRGB(255, 0, 255),
+    ["The Trinity"] = Color3.fromRGB(255, 165, 0),
+    ["Hoboes"] = Color3.fromRGB(128, 0, 128),
+    ["Hooligans"] = Color3.fromRGB(165, 42, 42),
+    ["The Noobic Union"] = Color3.fromRGB(0, 128, 128),
+    ["NETO"] = Color3.fromRGB(128, 128, 128),
+    ["Juggernaut"] = Color3.fromRGB(139, 0, 0),
+    ["Robbers"] = Color3.fromRGB(255, 140, 0)
 }
 
 local teams = {
@@ -100,7 +100,6 @@ local characterToTeam = {}
 for teamName, members in pairs(teams) do
     teamLookup[teamName] = {}
     for _, memberName in ipairs(members) do
-        -- Clean name (remove punctuation and extra spaces)
         local cleanName = memberName:gsub("[%,%.]", ""):gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
         teamLookup[teamName][cleanName] = true
         characterToTeam[cleanName] = teamName
@@ -108,12 +107,14 @@ for teamName, members in pairs(teams) do
 end
 
 -- =============================================================================
--- HINT SYSTEM INTEGRATION
+-- IMPROVED HINT SYSTEM
 -- =============================================================================
 
-local playersMatchingHints = {} -- Stores players who currently match hints
-local hintTextConnection = nil -- Stores the signal connection for the hint text
-local NPCSFolder = Workspace:FindFirstChild("NPCSFolder") -- For hint matching
+local playersMatchingHints = {}
+local hintTextConnection = nil
+local NPCSFolder = Workspace:FindFirstChild("NPCSFolder")
+local lastHintCheck = 0
+local HINT_CHECK_INTERVAL = 1
 
 -- Function to parse a single hint
 local function parseSingleHint(hintContent)
@@ -125,7 +126,7 @@ local function parseSingleHint(hintContent)
         return hintType, hintValue
     end
 
-    -- Check for task hint format: "Is often seen " followed by the task
+    -- Check for task hint format
     local taskMatch = cleanedContent:match("^Is often seen%s*(.*)$")
     if taskMatch then
         hintType = "task"
@@ -133,7 +134,7 @@ local function parseSingleHint(hintContent)
         return hintType, hintValue
     end
 
-    -- Check for trait hint format: text within square brackets []
+    -- Check for trait hint format
     local traitBracketMatch = cleanedContent:match("^%[.-%]$")
     if traitBracketMatch then
         local cleanClue = traitBracketMatch:gsub("[%[%]]", ""):match("^%s*(.-)%s*$") or ""
@@ -155,12 +156,16 @@ end
 
 -- Function to update players matching hints
 local function updateMatchingHintPlayers()
-    playersMatchingHints = {} -- Clear previous results
+    local previousMatches = {}
+    for player in pairs(playersMatchingHints) do
+        previousMatches[player] = true
+    end
+    
+    playersMatchingHints = {}
 
     local PlayerGui = localPlayer:FindFirstChild("PlayerGui")
     if not PlayerGui then return end
 
-    -- Find the hint label (adjust path as needed for your game)
     local TargetHintLabel = PlayerGui:FindFirstChild("RESETONDEATHStatusGui") and 
                            PlayerGui.RESETONDEATHStatusGui:FindFirstChild("TARGETHINT")
 
@@ -170,13 +175,13 @@ local function updateMatchingHintPlayers()
 
     local hintText = TargetHintLabel.Text
 
-    -- Check if local player is killer based on hint prefix
+    -- Check if local player is killer
     local hintPrefix = "Hints : "
     local lowerHintText = string.lower(hintText)
     local lowerHintPrefix = string.lower(hintPrefix)
 
     if lowerHintText:sub(1, string.len(lowerHintPrefix)) ~= lowerHintPrefix then
-        return -- Exit if not killer
+        return
     end
 
     -- Remove prefix and parse hints
@@ -277,6 +282,28 @@ local function updateMatchingHintPlayers()
             end
         end
     end
+    
+    -- Force ESP update if hint matches changed
+    local hintsChanged = false
+    for player in pairs(playersMatchingHints) do
+        if not previousMatches[player] then
+            hintsChanged = true
+            break
+        end
+    end
+    
+    if not hintsChanged then
+        for player in pairs(previousMatches) do
+            if not playersMatchingHints[player] then
+                hintsChanged = true
+                break
+            end
+        end
+    end
+    
+    if hintsChanged and ESPEnabled then
+        updateAllESPDisplays()
+    end
 end
 
 -- Function to connect hint text signal
@@ -297,20 +324,22 @@ local function connectHintTextSignal()
         return
     end
 
-    hintTextConnection = TargetHintLabel:GetPropertyChangedSignal("Text"):Connect(updateMatchingHintPlayers)
-    updateMatchingHintPlayers() -- Initial check
+    hintTextConnection = TargetHintLabel:GetPropertyChangedSignal("Text"):Connect(function()
+        updateMatchingHintPlayers()
+    end)
+    updateMatchingHintPlayers()
 end
 
 -- =============================================================================
--- ORIGINAL ESP SYSTEM (MODIFIED FOR HINTS)
+-- ESP SYSTEM
 -- =============================================================================
 
 -- Cache variables for optimization
 local rolesChecked = false
 local lastRoleCheck = 0
-local ROLE_CHECK_INTERVAL = 10 -- Check roles every 10 seconds
+local ROLE_CHECK_INTERVAL = 10
 
--- Function to check if roles are present in the game (optimized)
+-- Function to check if roles are present in the game
 local function checkForRoles()
     local currentTime = tick()
     if currentTime - lastRoleCheck < ROLE_CHECK_INTERVAL then
@@ -319,14 +348,12 @@ local function checkForRoles()
     
     lastRoleCheck = currentTime
     
-    -- Quick check: look for any BillboardGui with team names
     for _, obj in ipairs(Workspace:GetDescendants()) do
         if obj:IsA("BillboardGui") then
             local textLabel = obj:FindFirstChildOfClass("TextLabel")
             if textLabel and textLabel.Text then
                 local text = textLabel.Text:gsub("[%,%.]", ""):gsub("%s+", " "):gsub("^%s*(.-)%s*$", "%1")
                 
-                -- Quick team name check
                 for teamName in pairs(teams) do
                     if text:find(teamName, 1, true) then
                         rolesChecked = true
@@ -337,7 +364,6 @@ local function checkForRoles()
         end
     end
     
-    -- If no billboard found, check NPCs (limited check)
     local npcsFolder = Workspace:FindFirstChild("NPCSfolders")
     if npcsFolder then
         for _, npc in ipairs(npcsFolder:GetChildren()) do
@@ -352,7 +378,7 @@ local function checkForRoles()
                     end
                 end
             end
-            break -- Only check first NPC for performance
+            break
         end
     end
     
@@ -369,11 +395,11 @@ local function isToolEquippedByPlayer(tool)
     return false
 end
 
--- Cache for player weapons to reduce calls
+-- Cache for player weapons
 local playerWeaponsCache = {}
-local WEAPONS_CACHE_TIME = 5 -- Cache weapons for 5 seconds
+local WEAPONS_CACHE_TIME = 1
 
--- Function to get a player's weapons (with caching)
+-- Function to get a player's weapons
 local function getPlayerWeapons(player)
     local currentTime = tick()
     local cache = playerWeaponsCache[player]
@@ -385,7 +411,6 @@ local function getPlayerWeapons(player)
     local weapons = {}
     local character = player.Character
     
-    -- Only check backpack if character exists
     if character then
         local backpack = player:FindFirstChild("Backpack")
         if backpack then
@@ -403,7 +428,6 @@ local function getPlayerWeapons(player)
         end
     end
     
-    -- Update cache
     playerWeaponsCache[player] = {
         weapons = weapons,
         time = currentTime
@@ -427,26 +451,26 @@ local function getPlayerHealth(player)
     return math.floor(humanoid.Health), math.floor(humanoid.MaxHealth)
 end
 
--- Function to determine weapon type and color (guncheck mode)
+-- Function to determine weapon type and color
 local function getWeaponColor(weapons)
     if #weapons == 0 then
-        return Color3.fromRGB(0, 255, 0) -- Green for no weapons
+        return Color3.fromRGB(0, 255, 0)
     end
 
     for _, weaponName in ipairs(weapons) do
         if killerWeaponsLookup[weaponName] then
-            return Color3.fromRGB(255, 0, 0) -- Red for killer
+            return Color3.fromRGB(255, 0, 0)
         end
 
         if sheriffWeaponsLookup[weaponName] then
-            return Color3.fromRGB(0, 0, 255) -- Blue for sheriff
+            return Color3.fromRGB(0, 0, 255)
         end
     end
 
-    return Color3.fromRGB(0, 255, 0) -- Green for other weapons
+    return Color3.fromRGB(0, 255, 0)
 end
 
--- Function to get player's team based on character display name
+-- Function to get player's team
 local function getPlayerTeam(player)
     if player.Character then
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
@@ -458,13 +482,11 @@ local function getPlayerTeam(player)
     return nil
 end
 
--- MODIFIED: Function to determine player color with hint support
+-- Function to determine player color with hint support
 local function getPlayerColor(player)
-    -- Check if player matches hints FIRST (highest priority)
     if playersMatchingHints[player] then
         local weapons = getPlayerWeapons(player)
         
-        -- Check if player has killer or sheriff weapons
         local hasKillerOrSheriffWeapon = false
         for _, weaponName in ipairs(weapons) do
             if killerWeaponsLookup[weaponName] or sheriffWeaponsLookup[weaponName] then
@@ -474,26 +496,22 @@ local function getPlayerColor(player)
         end
         
         if hasKillerOrSheriffWeapon then
-            return Color3.fromRGB(128, 0, 128) -- Purple for killer/sheriff with hint
+            return Color3.fromRGB(128, 0, 128)
         else
-            return Color3.fromRGB(255, 255, 0) -- Yellow for regular player with hint
+            return Color3.fromRGB(255, 255, 0)
         end
     end
     
-    -- Original color logic if no hint match
     local rolesFound = checkForRoles()
     
     if rolesFound then
-        -- Team mode: use unique color for each team
         local playerTeam = getPlayerTeam(player)
         if playerTeam and teamColors[playerTeam] then
             return teamColors[playerTeam]
         else
-            -- If team is not defined, use white color
             return Color3.fromRGB(255, 255, 255)
         end
     else
-        -- Guncheck mode: use weapon-based logic
         local weapons = getPlayerWeapons(player)
         return getWeaponColor(weapons)
     end
@@ -511,33 +529,30 @@ local function getDistanceToPlayer(player)
     return (localRoot.Position - playerRoot.Position).Magnitude
 end
 
--- MODIFIED: Function to format weapons list with configurable distance
+-- Function to format weapons list
 local function formatWeaponsList(weapons, distance)
     if distance > MaxItemsDistance then
-        return "..." -- Show ellipsis if player is far away
+        return "..."
     end
     
     if #weapons == 0 then
         return "No items"
     else
-        -- Show all items if player is close
         return table.concat(weapons, ", ")
     end
 end
 
--- MODIFIED: Function to create display text with hint indicator
+-- Function to create display text with hint indicator
 local function createDisplayText(playerName, weapons, distance, currentHealth, maxHealth)
     local weaponText = formatWeaponsList(weapons, distance)
     local healthText = "HP: " .. currentHealth .. "/" .. maxHealth
     
-    -- Add hint indicator if player matches hints
     local player = Players:FindFirstChild(playerName)
     local hintIndicator = ""
     if player and playersMatchingHints[player] then
         hintIndicator = " [HINT]"
     end
     
-    -- Add team info if available
     if player then
         local playerTeam = getPlayerTeam(player)
         if playerTeam then
@@ -552,50 +567,150 @@ end
 local activeESPGuis = {}
 local activeWeaponHighlights = {}
 
--- Configuration
-local HIGHLIGHT_LIFETIME = 10
-local FADE_DURATION = 2
-
--- Function to clean up old highlights
-local function cleanupOldHighlights()
-    local currentTime = tick()
-    local playersToRemove = {}
-    
+-- Function to update all ESP displays
+local function updateAllESPDisplays()
     for player, espData in pairs(activeESPGuis) do
-        if currentTime - espData.createTime > HIGHLIGHT_LIFETIME then
-            if espData.highlight and espData.highlight:IsDescendantOf(game) then
-                local tweenInfo = TweenInfo.new(FADE_DURATION, Enum.EasingStyle.Quad, Enum.EasingDirection.In)
-                local fadeTween = TweenService:Create(espData.highlight, tweenInfo, {FillTransparency = 1, OutlineTransparency = 1})
-                fadeTween:Play()
-                espData.fadeTween = fadeTween
-                espData.fadeStartTime = currentTime
+        if player and player.Character and espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
+            local weapons = getPlayerWeapons(player)
+            local distance = getDistanceToPlayer(player)
+            local currentHealth, maxHealth = getPlayerHealth(player)
+            local displayText = createDisplayText(player.Name, weapons, distance, currentHealth, maxHealth)
+            local color = getPlayerColor(player)
+            
+            local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
+            if textLabel then
+                textLabel.Text = displayText
+                textLabel.TextColor3 = color
             end
             
-            if espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
-                local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
-                if textLabel then
-                    local textTween = TweenService:Create(textLabel, tweenInfo, {TextTransparency = 1, TextStrokeTransparency = 1})
-                    textTween:Play()
-                end
+            if espData.highlight then
+                espData.highlight.FillColor = color
+                espData.highlight.OutlineColor = color
+            end
+        end
+    end
+end
+
+-- Function to create ESP for a player
+local function createPlayerESP(player)
+    if not ESPEnabled then return end
+    if player == localPlayer then return end
+
+    local character = player.Character
+    if not character then return end
+
+    local head = character:FindFirstChild("Head")
+    if not head then return end
+
+    local weapons = getPlayerWeapons(player)
+    local distance = getDistanceToPlayer(player)
+    local currentHealth, maxHealth = getPlayerHealth(player)
+    local displayText = createDisplayText(player.Name, weapons, distance, currentHealth, maxHealth)
+    local color = getPlayerColor(player)
+
+    if activeESPGuis[player] then
+        local espData = activeESPGuis[player]
+        
+        if espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
+            local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
+            if textLabel then
+                textLabel.Text = displayText
+                textLabel.TextColor3 = color
             end
         end
         
-        if espData.fadeStartTime and currentTime - espData.fadeStartTime > FADE_DURATION then
-            table.insert(playersToRemove, player)
+        if espData.highlight and espData.highlight:IsDescendantOf(game) then
+            espData.highlight.FillColor = color
+            espData.highlight.OutlineColor = color
+            espData.createTime = tick()
         end
+        
+        return
+    end
+
+    local billboardGui = Instance.new("BillboardGui")
+    billboardGui.Name = "PlayerESP"
+    billboardGui.Adornee = head
+    billboardGui.Size = UDim2.new(0, 200, 0, 70)
+    billboardGui.StudsOffset = Vector3.new(0, 2.5, 0)
+    billboardGui.AlwaysOnTop = true
+    billboardGui.Enabled = true
+    billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
+    billboardGui.Parent = head
+
+    local textLabel = Instance.new("TextLabel")
+    textLabel.Size = UDim2.new(1, 0, 1, 0)
+    textLabel.BackgroundTransparency = 1
+    textLabel.Text = displayText
+    textLabel.TextColor3 = color
+    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
+    textLabel.TextStrokeTransparency = 0.3
+    textLabel.TextSize = 12
+    textLabel.Font = Enum.Font.GothamBold
+    textLabel.TextWrapped = true
+    textLabel.ZIndex = 10
+    textLabel.Parent = billboardGui
+
+    local highlight = Instance.new("Highlight")
+    highlight.Adornee = character
+    highlight.FillColor = color
+    highlight.OutlineColor = color
+    highlight.FillTransparency = 0.7
+    highlight.OutlineTransparency = 0.0
+    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
+    highlight.Parent = character
+
+    activeESPGuis[player] = {
+        billboardGui = billboardGui,
+        highlight = highlight,
+        createTime = tick()
+    }
+end
+
+-- Function to handle character added event
+local function onCharacterAdded(character, player)
+    if not ESPEnabled then return end
+    
+    if activeESPGuis[player] then
+        if activeESPGuis[player].billboardGui then
+            activeESPGuis[player].billboardGui:Destroy()
+        end
+        if activeESPGuis[player].highlight then
+            activeESPGuis[player].highlight:Destroy()
+        end
+        activeESPGuis[player] = nil
     end
     
-    for _, player in ipairs(playersToRemove) do
-        if activeESPGuis[player] then
-            if activeESPGuis[player].billboardGui then
-                activeESPGuis[player].billboardGui:Destroy()
-            end
-            if activeESPGuis[player].highlight then
-                activeESPGuis[player].highlight:Destroy()
-            end
-            activeESPGuis[player] = nil
-        end
+    playerWeaponsCache[player] = nil
+    createPlayerESP(player)
+end
+
+-- Function to handle player added
+local function onPlayerAdded(player)
+    if not ESPEnabled then return end
+    
+    player.CharacterAdded:Connect(function(character)
+        onCharacterAdded(character, player)
+    end)
+    
+    if player.Character then
+        onCharacterAdded(player.Character, player)
     end
+end
+
+-- Function to clean up when player leaves
+local function onPlayerRemoving(player)
+    if activeESPGuis[player] then
+        if activeESPGuis[player].billboardGui then
+            activeESPGuis[player].billboardGui:Destroy()
+        end
+        if activeESPGuis[player].highlight then
+            activeESPGuis[player].highlight:Destroy()
+        end
+        activeESPGuis[player] = nil
+    end
+    playerWeaponsCache[player] = nil
+    playersMatchingHints[player] = nil
 end
 
 -- Function to highlight dropped weapons
@@ -605,12 +720,12 @@ local function highlightDroppedWeapon(tool)
     if activeWeaponHighlights[tool] then return end
     
     if tool:IsDescendantOf(Workspace) and not isToolEquippedByPlayer(tool) then
-        local weaponColor = Color3.fromRGB(0, 255, 0) -- Green by default
+        local weaponColor = Color3.fromRGB(0, 255, 0)
         
         if killerWeaponsLookup[tool.Name] then
-            weaponColor = Color3.fromRGB(255, 0, 0) -- Red for killer
+            weaponColor = Color3.fromRGB(255, 0, 0)
         elseif sheriffWeaponsLookup[tool.Name] then
-            weaponColor = Color3.fromRGB(0, 0, 255) -- Blue for sheriff
+            weaponColor = Color3.fromRGB(0, 0, 255)
         else
             return
         end
@@ -646,11 +761,10 @@ local function highlightDroppedWeapon(tool)
     end
 end
 
--- Optimized workspace monitoring
+-- Function to monitor workspace for weapons
 local function monitorWorkspaceForWeapons()
     if not ESPEnabled then return end
     
-    -- Initial scan in chunks to prevent lag
     local tools = {}
     for _, tool in ipairs(Workspace:GetDescendants()) do
         if tool:IsA("Tool") then
@@ -658,7 +772,6 @@ local function monitorWorkspaceForWeapons()
         end
     end
     
-    -- Process tools in chunks
     for i = 1, #tools, 10 do
         for j = i, math.min(i + 9, #tools) do
             highlightDroppedWeapon(tools[j])
@@ -666,7 +779,6 @@ local function monitorWorkspaceForWeapons()
         wait(0.05)
     end
     
-    -- Listen for new tools
     local weaponConnection
     weaponConnection = Workspace.DescendantAdded:Connect(function(descendant)
         if descendant:IsA("Tool") then
@@ -678,165 +790,10 @@ local function monitorWorkspaceForWeapons()
     return weaponConnection
 end
 
--- Function to update all ESP displays with new distance settings
-local function updateAllESPDisplays()
-    for player, espData in pairs(activeESPGuis) do
-        if player and player.Character and espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
-            local weapons = getPlayerWeapons(player)
-            local distance = getDistanceToPlayer(player)
-            local currentHealth, maxHealth = getPlayerHealth(player)
-            local displayText = createDisplayText(player.Name, weapons, distance, currentHealth, maxHealth)
-            
-            local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
-            if textLabel then
-                textLabel.Text = displayText
-            end
-        end
-    end
-end
-
--- MAIN FUNCTION: Create ESP for a player - FAST VERSION WITHOUT DISTANCE LIMITATIONS
-local function createPlayerESP(player)
-    if not ESPEnabled then return end
-    if player == localPlayer then return end
-
-    local character = player.Character
-    if not character then return end
-
-    local head = character:FindFirstChild("Head")
-    if not head then return end
-
-    -- Get player's weapons, health and determine color
-    local weapons = getPlayerWeapons(player)
-    local distance = getDistanceToPlayer(player)
-    local currentHealth, maxHealth = getPlayerHealth(player)
-    local displayText = createDisplayText(player.Name, weapons, distance, currentHealth, maxHealth)
-    local color = getPlayerColor(player)
-
-    -- Update existing ESP instead of recreating
-    if activeESPGuis[player] then
-        local espData = activeESPGuis[player]
-        
-        -- Update text
-        if espData.billboardGui and espData.billboardGui:IsDescendantOf(game) then
-            local textLabel = espData.billboardGui:FindFirstChildOfClass("TextLabel")
-            if textLabel then
-                textLabel.Text = displayText
-                textLabel.TextColor3 = color
-                -- Removed text color change based on health
-            end
-        end
-        
-        -- Update highlight color
-        if espData.highlight and espData.highlight:IsDescendantOf(game) then
-            espData.highlight.FillColor = color
-            espData.highlight.OutlineColor = color
-            espData.createTime = tick() -- Reset timer
-        end
-        
-        return
-    end
-
-    -- Create new BillboardGui WITHOUT DISTANCE LIMITATIONS
-    local billboardGui = Instance.new("BillboardGui")
-    billboardGui.Name = "PlayerESP"
-    billboardGui.Adornee = head
-    billboardGui.Size = UDim2.new(0, 200, 0, 70) -- Increased height for health display
-    billboardGui.StudsOffset = Vector3.new(0, 2.5, 0)
-    billboardGui.AlwaysOnTop = true
-    -- REMOVED MaxDistance for display at any distance
-    billboardGui.Enabled = true
-    billboardGui.ZIndexBehavior = Enum.ZIndexBehavior.Sibling
-    billboardGui.Parent = head
-
-    -- Create TextLabel
-    local textLabel = Instance.new("TextLabel")
-    textLabel.Size = UDim2.new(1, 0, 1, 0)
-    textLabel.BackgroundTransparency = 1
-    textLabel.Text = displayText
-    textLabel.TextColor3 = color
-    textLabel.TextStrokeColor3 = Color3.new(0, 0, 0)
-    textLabel.TextStrokeTransparency = 0.3
-    textLabel.TextSize = 12
-    textLabel.Font = Enum.Font.GothamBold
-    textLabel.TextWrapped = true
-    textLabel.ZIndex = 10
-    textLabel.Parent = billboardGui
-
-    -- Create Highlight
-    local highlight = Instance.new("Highlight")
-    highlight.Adornee = character
-    highlight.FillColor = color
-    highlight.OutlineColor = color
-    highlight.FillTransparency = 0.7
-    highlight.OutlineTransparency = 0.0
-    highlight.DepthMode = Enum.HighlightDepthMode.AlwaysOnTop
-    highlight.Parent = character
-
-    activeESPGuis[player] = {
-        billboardGui = billboardGui,
-        highlight = highlight,
-        createTime = tick(),
-        fadeTween = nil,
-        fadeStartTime = nil
-    }
-end
-
--- Function to handle character added event - INSTANT VERSION
-local function onCharacterAdded(character, player)
-    if not ESPEnabled then return end
-    
-    if activeESPGuis[player] then
-        if activeESPGuis[player].billboardGui then
-            activeESPGuis[player].billboardGui:Destroy()
-        end
-        if activeESPGuis[player].highlight then
-            activeESPGuis[player].highlight:Destroy()
-        end
-        activeESPGuis[player] = nil
-    end
-    
-    -- Clear weapons cache for this player
-    playerWeaponsCache[player] = nil
-    
-    -- INSTANT ESP CREATION - without delays
-    createPlayerESP(player)
-end
-
--- Function to handle player added
-local function onPlayerAdded(player)
-    if not ESPEnabled then return end
-    
-    player.CharacterAdded:Connect(function(character)
-        onCharacterAdded(character, player)
-    end)
-    
-    if player.Character then
-        -- INSTANT ESP CREATION for existing players
-        onCharacterAdded(player.Character, player)
-    end
-end
-
--- Function to clean up when player leaves
-local function onPlayerRemoving(player)
-    if activeESPGuis[player] then
-        if activeESPGuis[player].billboardGui then
-            activeESPGuis[player].billboardGui:Destroy()
-        end
-        if activeESPGuis[player].highlight then
-            activeESPGuis[player].highlight:Destroy()
-        end
-        activeESPGuis[player] = nil
-    end
-    playerWeaponsCache[player] = nil
-    playersMatchingHints[player] = nil -- Remove from hint matches
-end
-
 -- =============================================================================
 -- ESP CONTROL FUNCTIONS
 -- =============================================================================
 
--- Event connections storage
 local eventConnections = {}
 local mainLoopConnection = nil
 local fastScanConnection = nil
@@ -849,59 +806,49 @@ local function enableESP()
     
     print("ESP Enabled")
     
-    -- Connect hint system
     connectHintTextSignal()
     
-    -- Connect player events
     eventConnections.playerAdded = Players.PlayerAdded:Connect(onPlayerAdded)
     eventConnections.playerRemoving = Players.PlayerRemoving:Connect(onPlayerRemoving)
     
-    -- INSTANT INITIALIZATION of all players
     for _, player in ipairs(Players:GetPlayers()) do
         if player ~= localPlayer then
             onPlayerAdded(player)
         end
     end
     
-    -- Start monitoring for dropped weapons
     weaponMonitorConnection = monitorWorkspaceForWeapons()
     
-    -- FAST UPDATE CYCLE
     local updateCounter = 0
-    local cleanupCounter = 0
+    local hintCheckCounter = 0
     
     mainLoopConnection = RunService.Heartbeat:Connect(function(deltaTime)
         if not ESPEnabled then return end
         
         updateCounter = updateCounter + deltaTime
-        cleanupCounter = cleanupCounter + deltaTime
+        hintCheckCounter = hintCheckCounter + deltaTime
         
-        -- FAST ESP UPDATE (every second)
         if updateCounter >= 1 then
             updateCounter = 0
             
-            -- INSTANT UPDATE OF ALL PLAYERS
             for player, _ in pairs(activeESPGuis) do
                 if player and player.Parent and player.Character then
-                    createPlayerESP(player) -- Update existing ESP
+                    createPlayerESP(player)
                 end
             end
         end
         
-        -- Cleanup old highlights every 5 seconds
-        if cleanupCounter >= 4 then
-            cleanupCounter = 0
-            cleanupOldHighlights()
+        if hintCheckCounter >= 2 then
+            hintCheckCounter = 0
+            updateMatchingHintPlayers()
         end
     end)
     
-    -- ADDITIONAL INSTANT SCAN FOR NEW PLAYERS
     fastScanConnection = RunService.Heartbeat:Connect(function()
         if not ESPEnabled then return end
         
         for _, player in ipairs(Players:GetPlayers()) do
             if player ~= localPlayer and not activeESPGuis[player] and player.Character then
-                -- INSTANTLY create ESP for players who don't have ESP yet
                 createPlayerESP(player)
             end
         end
@@ -915,7 +862,6 @@ local function disableESP()
     
     print("ESP Disabled")
     
-    -- Disconnect all event connections
     if hintTextConnection then
         hintTextConnection:Disconnect()
         hintTextConnection = nil
@@ -941,7 +887,6 @@ local function disableESP()
         weaponMonitorConnection = nil
     end
     
-    -- Remove all ESP elements
     for player, espData in pairs(activeESPGuis) do
         if espData.billboardGui then
             espData.billboardGui:Destroy()
@@ -952,7 +897,6 @@ local function disableESP()
     end
     activeESPGuis = {}
     
-    -- Remove all weapon highlights
     for tool, weaponData in pairs(activeWeaponHighlights) do
         if weaponData.highlight then
             weaponData.highlight:Destroy()
@@ -960,79 +904,17 @@ local function disableESP()
     end
     activeWeaponHighlights = {}
     
-    -- Clear caches
     playerWeaponsCache = {}
     playersMatchingHints = {}
 end
 
 -- =============================================================================
--- ADVANCED TEAM CHECK SYSTEM
+-- AIMBOT SYSTEM
 -- =============================================================================
 
--- Function to get player's weapon type
-local function getPlayerWeaponType(player)
-    local weapons = getPlayerWeapons(player)
-    
-    if #weapons == 0 then
-        return "unarmed" -- Зеленый
-    end
-
-    for _, weaponName in ipairs(weapons) do
-        if killerWeaponsLookup[weaponName] then
-            return "killer" -- Красный
-        end
-
-        if sheriffWeaponsLookup[weaponName] then
-            return "sheriff" -- Синий
-        end
-    end
-
-    return "unarmed" -- Зеленый для обычного оружия
-end
-
--- NEW TEAM CHECK FUNCTION
-local function canAimAtTarget(localPlayer, targetPlayer)
-    local localTeam = getPlayerTeam(localPlayer)
-    local targetTeam = getPlayerTeam(targetPlayer)
-    
-    -- Если у меня определена команда
-    if localTeam then
-        -- Не могу аимиться на игроков из своей команды
-        if targetTeam and localTeam == targetTeam then
-            return false
-        end
-        -- Могу аимиться на игроков из других команд
-        return true
-    end
-    
-    -- Если команда не определена (gun check режим)
-    local localWeaponType = getPlayerWeaponType(localPlayer)
-    local targetWeaponType = getPlayerWeaponType(targetPlayer)
-    
-    if localWeaponType == "unarmed" or localWeaponType == "sheriff" then
-        -- Безоружный или шериф: не может аимиться на безоружных и шерифов
-        if targetWeaponType == "unarmed" or targetWeaponType == "sheriff" then
-            return false
-        end
-        -- Но может аимиться на киллеров
-        return targetWeaponType == "killer"
-    elseif localWeaponType == "killer" then
-        -- Киллер: может аимиться на всех
-        return true
-    end
-    
-    -- Если роль не определена - можно аимиться на всех
-    return true
-end
-
--- =============================================================================
--- AIMBOT SYSTEM WITH ADVANCED TEAM CHECK
--- =============================================================================
-
--- Настройки аимбота
 local AimbotSettings = {
     Enabled = false,
-    TeamCheck = true, -- Включено по умолчанию
+    TeamCheck = true,
     WallCheck = true,
     HealthCheck = true,
     MinHealth = 5,
@@ -1048,7 +930,6 @@ local AimbotSettings = {
     MaxDistance = 1000,
 }
 
--- Переменные для работы аимбота
 local AimbotEnabled = false
 local CurrentTarget = nil
 local LastSwitchTime = tick()
@@ -1059,10 +940,8 @@ local LastWallCheckTime = 0
 local LastTargetUpdateTime = 0
 local renderSteppedConnection = nil
 
--- Кэширование часто используемых объектов
 local CameraViewportSize = Camera.ViewportSize
 
--- Создание круга FOV
 local FOVCircle = Drawing.new("Circle")
 FOVCircle.Visible = false
 FOVCircle.Radius = AimbotSettings.FOV
@@ -1071,7 +950,6 @@ FOVCircle.Thickness = 2
 FOVCircle.Filled = false
 FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, CameraViewportSize.Y / 2)
 
--- Функция для получения текущей части тела
 local function GetCurrentLockPart()
     if AimbotSettings.SwitchEnabled then
         return CurrentLockPart
@@ -1080,7 +958,6 @@ local function GetCurrentLockPart()
     end
 end
 
--- Проверка видимости
 local function IsVisible(target)
     if not AimbotSettings.WallCheck then return true end
     if not target or not target.Character then return false end
@@ -1119,7 +996,6 @@ local function IsVisible(target)
     return isVisible
 end
 
--- Функция очистки кэша
 local function CleanupVisibilityCache()
     local currentTime = tick()
     local cleanupThreshold = 0.5
@@ -1131,18 +1007,61 @@ local function CleanupVisibilityCache()
     end
 end
 
--- Запуск периодической очистки кэша
 task.spawn(function()
     while task.wait(10) do
         CleanupVisibilityCache()
     end
 end)
 
--- НОВАЯ ФУНКЦИЯ ПРОВЕРКИ ЦЕЛИ С TEAM CHECK
+local function getPlayerWeaponType(player)
+    local weapons = getPlayerWeapons(player)
+    
+    if #weapons == 0 then
+        return "unarmed"
+    end
+
+    for _, weaponName in ipairs(weapons) do
+        if killerWeaponsLookup[weaponName] then
+            return "killer"
+        end
+
+        if sheriffWeaponsLookup[weaponName] then
+            return "sheriff"
+        end
+    end
+
+    return "unarmed"
+end
+
+local function canAimAtTarget(localPlayer, targetPlayer)
+    local localTeam = getPlayerTeam(localPlayer)
+    local targetTeam = getPlayerTeam(targetPlayer)
+    
+    if localTeam then
+        if targetTeam and localTeam == targetTeam then
+            return false
+        end
+        return true
+    end
+    
+    local localWeaponType = getPlayerWeaponType(localPlayer)
+    local targetWeaponType = getPlayerWeaponType(targetPlayer)
+    
+    if localWeaponType == "unarmed" or localWeaponType == "sheriff" then
+        if targetWeaponType == "unarmed" or targetWeaponType == "sheriff" then
+            return false
+        end
+        return targetWeaponType == "killer"
+    elseif localWeaponType == "killer" then
+        return true
+    end
+    
+    return true
+end
+
 local function IsValidTarget(player)
     if not player.Character then return false end
     
-    -- Проверка здоровья
     if AimbotSettings.HealthCheck then
         local humanoid = player.Character:FindFirstChildOfClass("Humanoid")
         if not humanoid or humanoid.Health < AimbotSettings.MinHealth then
@@ -1150,7 +1069,6 @@ local function IsValidTarget(player)
         end
     end
     
-    -- Проверка дистанции
     local targetPart = player.Character:FindFirstChild(GetCurrentLockPart())
     if targetPart then
         local distance = (targetPart.Position - Camera.CFrame.Position).Magnitude
@@ -1161,12 +1079,10 @@ local function IsValidTarget(player)
         return false
     end
     
-    -- НОВАЯ СИСТЕМА TEAM CHECK
     if AimbotSettings.TeamCheck then
         return canAimAtTarget(localPlayer, player)
     end
     
-    -- Если TeamCheck выключен, можно аимиться на всех
     return true
 end
 
@@ -1238,7 +1154,6 @@ local function AimAtTarget(target)
     Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
 end
 
--- ОСНОВНОЙ ЦИКЛ АИМБОТА
 local frameCounter = 0
 local function startAimbotLoop()
     if renderSteppedConnection then
@@ -1281,12 +1196,10 @@ local function startAimbotLoop()
     end)
 end
 
--- Очистка при изменении персонажа
 localPlayer.CharacterAdded:Connect(function()
     VisibilityCache = {}
 end)
 
--- Обработка ввода для аимбота
 UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
     
@@ -1312,7 +1225,6 @@ end)
 -- RAYFIELD GUI
 -- =============================================================================
 
--- Create Rayfield window
 local Window = Rayfield:CreateWindow({
     Name = "ESP & Aimbot",
     LoadingTitle = "ESP & Aimbot",
@@ -1330,10 +1242,8 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false,
 })
 
--- Main tab
 local MainTab = Window:CreateTab("Main", 4483362458)
 
--- Toggle for ESP
 local ESPToggle = MainTab:CreateToggle({
     Name = "ESP Enabled",
     CurrentValue = false,
@@ -1347,7 +1257,6 @@ local ESPToggle = MainTab:CreateToggle({
     end,
 })
 
--- Information section
 local InfoSection = MainTab:CreateSection("Information")
 MainTab:CreateLabel("ESP Features:")
 MainTab:CreateLabel("- Player highlighting with HP")
@@ -1356,13 +1265,10 @@ MainTab:CreateLabel("- Team identification")
 MainTab:CreateLabel("- Hint system integration")
 MainTab:CreateLabel("- Dropped weapon highlighting")
 
--- Settings tab
 local SettingsTab = Window:CreateTab("Settings", 4483362458)
 
--- Distance settings section
 local DistanceSection = SettingsTab:CreateSection("Distance Settings")
 
--- Slider for item display distance
 local ItemDistanceSlider = SettingsTab:CreateSlider({
     Name = "Item Display Distance",
     Range = {10, 200},
@@ -1372,12 +1278,10 @@ local ItemDistanceSlider = SettingsTab:CreateSlider({
     Flag = "ItemDisplayDistance",
     Callback = function(Value)
         MaxItemsDistance = Value
-        -- Immediately update all ESP displays with new distance setting
         updateAllESPDisplays()
     end,
 })
 
--- Performance settings
 local PerformanceSection = SettingsTab:CreateSection("Performance")
 local UpdateRateSlider = SettingsTab:CreateSlider({
     Name = "Update Rate (seconds)",
@@ -1387,11 +1291,9 @@ local UpdateRateSlider = SettingsTab:CreateSlider({
     CurrentValue = 1,
     Flag = "UpdateRate",
     Callback = function(Value)
-        -- This would need to be integrated into the update loop
     end,
 })
 
--- Visual settings
 local VisualSection = SettingsTab:CreateSection("Visual")
 local HighlightTransparencySlider = SettingsTab:CreateSlider({
     Name = "Highlight Transparency",
@@ -1409,7 +1311,6 @@ local HighlightTransparencySlider = SettingsTab:CreateSlider({
     end,
 })
 
--- Buttons section
 local ButtonSection = SettingsTab:CreateSection("Controls")
 SettingsTab:CreateButton({
     Name = "Refresh ESP",
@@ -1429,19 +1330,13 @@ SettingsTab:CreateButton({
     end,
 })
 
--- Information about distance settings
 local DistanceInfoSection = SettingsTab:CreateSection("Distance Info")
 SettingsTab:CreateLabel("Item Distance: determines at what distance")
 SettingsTab:CreateLabel("player inventory items are displayed.")
 SettingsTab:CreateLabel("If distance is exceeded, '...' is shown")
 
--- =============================================================================
--- AIMBOT TAB
--- =============================================================================
-
 local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
 
--- Main Aimbot Toggle
 AimbotTab:CreateToggle({
     Name = "Aimbot Enabled",
     CurrentValue = AimbotSettings.Enabled,
@@ -1459,7 +1354,6 @@ AimbotTab:CreateToggle({
     end,
 })
 
--- Team Check Settings
 AimbotTab:CreateToggle({
     Name = "Team Check",
     CurrentValue = AimbotSettings.TeamCheck,
@@ -1476,7 +1370,6 @@ AimbotTab:CreateLabel("  • Unarmed/Sheriff: can aim at killers only")
 AimbotTab:CreateLabel("  • Killer: can aim at everyone")
 AimbotTab:CreateLabel("  • No team detected: can aim at everyone")
 
--- FOV Settings
 AimbotTab:CreateSlider({
     Name = "FOV Radius",
     Range = {10, 300},
@@ -1511,7 +1404,6 @@ AimbotTab:CreateSlider({
     end,
 })
 
--- Wall Check Settings
 AimbotTab:CreateToggle({
     Name = "Wall Check",
     CurrentValue = AimbotSettings.WallCheck,
@@ -1524,7 +1416,6 @@ AimbotTab:CreateToggle({
 
 AimbotTab:CreateLabel("Wall Check: Aimbot only works when target is visible")
 
--- Distance Settings
 AimbotTab:CreateSlider({
     Name = "Max Distance",
     Range = {50, 2000},
@@ -1537,7 +1428,6 @@ AimbotTab:CreateSlider({
     end,
 })
 
--- Lock Part Settings
 AimbotTab:CreateDropdown({
     Name = "Lock Part",
     Options = {"Head", "HumanoidRootPart", "Torso"},
@@ -1547,14 +1437,12 @@ AimbotTab:CreateDropdown({
         AimbotSettings.LockPart = Value
         VisibilityCache = {}
         
-        -- Если случайный режим выключен, сразу обновляем текущую часть
         if not AimbotSettings.SwitchEnabled then
             CurrentLockPart = Value
         end
     end,
 })
 
--- Random Aim Part Settings
 AimbotTab:CreateToggle({
     Name = "Random Aim Part",
     CurrentValue = AimbotSettings.SwitchEnabled,
@@ -1565,7 +1453,6 @@ AimbotTab:CreateToggle({
             LastSwitchTime = tick()
             NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
         else
-            -- При выключении случайного режима используем выбранную часть тела
             CurrentLockPart = AimbotSettings.LockPart
         end
         VisibilityCache = {}
@@ -1602,7 +1489,6 @@ AimbotTab:CreateSlider({
     end,
 })
 
--- FOV Circle Visibility
 AimbotTab:CreateToggle({
     Name = "Show FOV Circle",
     CurrentValue = FOVCircle.Visible,
@@ -1612,13 +1498,9 @@ AimbotTab:CreateToggle({
     end,
 })
 
--- Trigger Key Info
 AimbotTab:CreateSection("Trigger Key")
 AimbotTab:CreateLabel("Current Trigger Key: " .. AimbotSettings.TriggerKey)
 AimbotTab:CreateLabel("Hold this key to activate aimbot")
 
--- Initialize Rayfield
 Rayfield:LoadConfiguration()
-
--- Start the aimbot loop
-startAimbotLoop()
+startAimbotLoop() 
