@@ -1363,7 +1363,7 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateLabel("Team Check Rules:")
+AimbotTab:CreateLabel("Team Check:")
 AimbotTab:CreateLabel("- If you have a team: don't aim at teammates")
 AimbotTab:CreateLabel("- If no team (gun check mode):")
 AimbotTab:CreateLabel("  • Unarmed/Sheriff: can aim at killers only")
