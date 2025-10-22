@@ -5,18 +5,81 @@ local TweenService = game:GetService("TweenService")
 local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
+local ReplicatedStorage = game:GetService("ReplicatedStorage")
 
 -- Rayfield GUI
-local Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+local Rayfield
+local success, err = pcall(function()
+    Rayfield = loadstring(game:HttpGet('https://sirius.menu/rayfield'))()
+end)
+
+if not success or not Rayfield then
+    warn("Rayfield failed to load: " .. tostring(err))
+    return
+end
+
+-- Utility functions
+local function clamp(v, a, b) 
+    if v < a then 
+        return a 
+    elseif v > b then 
+        return b 
+    else 
+        return v 
+    end 
+end
+
+local function safeRequire(m)
+    local ok2, res = pcall(function() 
+        return require(m) 
+    end)
+    if ok2 then 
+        return res 
+    end
+    return nil
+end
+
+-- ===== State & Settings =====
+local State = {
+    ESP = false,
+    ESP_TeamCheck = false,
+    WalkLock = false,
+    WeaponEnhancementsEnabled = true,
+    RapidFire = false,
+    InfiniteAmmo = false,
+    SpreadControl = false,
+}
+
+local Settings = {
+    WalkSpeed = 16,
+    WalkMin = 8,
+    WalkMax = 200,
+    RapidFireRate = 0.02,
+    SpreadValue = 0,
+    AmmoValue = 30,
+}
+
+-- Door Handle Settings
+local DoorHandleSettings = {
+    Enabled = false,
+    SizeMultiplier = 2,
+    NoCollision = false
+}
+
+-- Third Person Unlocker Settings
+local ThirdPersonSettings = {
+    Enabled = false,
+    MaxZoomDistance = 15,
+    MinZoomDistance = 0
+}
 
 -- ESP state
 local ESPEnabled = false
-
--- Distance settings
 local MaxItemsDistance = 75
+local ESPUpdateRate = 1
 
 -- Define weapon lists
-local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911", "RR-LCP", "DarkSteel K1911", "Door'bler TIGERSTRIPES", "HEARBALLA", "RR-LCP10", "KamatovDRUM", "Charcoal Steel SKORPION", "SKORPION 'AMIRNOV", "Rosen Nagan", "M-1020"}
+local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911", "RR-LCP", "DarkSteel K1911", "Door'bler TIGERSTRIPES", "HEARBALLA", "RR-LCP10", "KamatovDRUM", "Charcoal Steel SKORPION", "SKORPION 'AMIRNOV", "Rosen Nagan", "M-1020", "RR-LightCompactPistolS10"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED", "RR-Snubby10"} 
 
 -- Convert weapon lists to dictionaries for faster lookup
@@ -105,6 +168,300 @@ for teamName, members in pairs(teams) do
         characterToTeam[cleanName] = teamName
     end
 end
+
+-- =============================================================================
+-- THIRD PERSON UNLOCKER SYSTEM
+-- =============================================================================
+
+local thirdPersonConnection = nil
+
+-- Основная функция разблокировки
+local function unlockThirdPerson()
+    -- Проверяем состояние камеры
+    if Camera.CameraType == Enum.CameraType.Scriptable then
+        Camera.CameraType = Enum.CameraType.Custom
+    end
+    
+    -- Принудительно устанавливаем третье лицо
+    localPlayer.CameraMode = Enum.CameraMode.Classic
+    
+    -- Дополнительные попытки разблокировки
+    wait(0.1)
+    localPlayer.CameraMaxZoomDistance = ThirdPersonSettings.MaxZoomDistance -- Максимальная дистанция зума
+    localPlayer.CameraMinZoomDistance = ThirdPersonSettings.MinZoomDistance  -- Минимальная дистанция зума
+    
+    -- Пытаемся вернуть контроль над камерой
+    local character = localPlayer.Character
+    if character then
+        local humanoid = character:FindFirstChildOfClass("Humanoid")
+        if humanoid then
+            humanoid.CameraOffset = Vector3.new(0, 0, 0)
+        end
+    end
+end
+
+local function toggleThirdPersonUnlocker()
+    if thirdPersonConnection then
+        thirdPersonConnection:Disconnect()
+        thirdPersonConnection = nil
+    end
+    
+    if ThirdPersonSettings.Enabled then
+        -- Запускаем мониторинг камеры
+        thirdPersonConnection = RunService.Heartbeat:Connect(function()
+            -- Если камера заблокирована в первом лице
+            if localPlayer.CameraMode == Enum.CameraMode.LockFirstPerson then
+                unlockThirdPerson()
+            end
+            
+            -- Если тип камеры нестандартный
+            if Camera.CameraType ~= Enum.CameraType.Custom then
+                Camera.CameraType = Enum.CameraType.Custom
+            end
+            
+            -- Проверяем возможность зума
+            if localPlayer.CameraMaxZoomDistance < 5 then
+                localPlayer.CameraMaxZoomDistance = ThirdPersonSettings.MaxZoomDistance
+            end
+        end)
+        
+        -- Применяем настройки сразу при включении
+        unlockThirdPerson()
+    end
+end
+
+-- =============================================================================
+-- DOOR HANDLE SYSTEM
+-- =============================================================================
+
+local originalDoorHandleProperties = {}
+local doorHandleConnection = nil
+
+local function modifyDoorHandle(part)
+    if part:IsA("Part") and part.Name == "Handeol" then
+        -- Save original properties if not already saved
+        if not originalDoorHandleProperties[part] then
+            originalDoorHandleProperties[part] = {
+                Size = part.Size,
+                CanCollide = part.CanCollide
+            }
+        end
+        
+        -- Apply modifications based on settings
+        if DoorHandleSettings.Enabled then
+            part.Size = originalDoorHandleProperties[part].Size * DoorHandleSettings.SizeMultiplier
+            part.CanCollide = not DoorHandleSettings.NoCollision
+        else
+            -- Restore original properties
+            if originalDoorHandleProperties[part] then
+                part.Size = originalDoorHandleProperties[part].Size
+                part.CanCollide = originalDoorHandleProperties[part].CanCollide
+            end
+        end
+    end
+end
+
+local function updateAllDoorHandles()
+    for _, part in ipairs(Workspace:GetDescendants()) do
+        modifyDoorHandle(part)
+    end
+end
+
+local function toggleDoorHandleSystem()
+    if doorHandleConnection then
+        doorHandleConnection:Disconnect()
+        doorHandleConnection = nil
+    end
+    
+    if DoorHandleSettings.Enabled then
+        -- Apply to existing door handles
+        updateAllDoorHandles()
+        
+        -- Connect to handle new door handles
+        doorHandleConnection = Workspace.DescendantAdded:Connect(function(descendant)
+            modifyDoorHandle(descendant)
+        end)
+    else
+        -- Restore all door handles to original state
+        for part, originalProps in pairs(originalDoorHandleProperties) do
+            if part and part.Parent then
+                part.Size = originalProps.Size
+                part.CanCollide = originalProps.CanCollide
+            end
+        end
+    end
+end
+
+-- =============================================================================
+-- FOV CHANGER SYSTEM
+-- =============================================================================
+
+local FOVChangerSettings = {
+    Enabled = false,
+    FOVValue = 90
+}
+
+local FOVChangerConnection = nil
+
+local function toggleFOVChanger()
+    if FOVChangerConnection then
+        FOVChangerConnection:Disconnect()
+        FOVChangerConnection = nil
+    end
+    
+    if FOVChangerSettings.Enabled then
+        FOVChangerConnection = Camera:GetPropertyChangedSignal("FieldOfView"):Connect(function()
+            if Camera.FieldOfView ~= FOVChangerSettings.FOVValue then
+                Camera.FieldOfView = FOVChangerSettings.FOVValue
+            end
+        end)
+        Camera.FieldOfView = FOVChangerSettings.FOVValue
+    end
+end
+
+-- =============================================================================
+-- FIXED HITBOX SYSTEM
+-- =============================================================================
+
+local HitboxSettings = {
+    Enabled = false,
+    OverallScale = 2.0,
+    HeightScale = 1.0,
+    WidthScale = 1.0,
+    DepthScale = 1.0,
+    ToggleKey = Enum.KeyCode.E,
+    Transparency = 0.8,
+    Color = Color3.fromRGB(255, 165, 0),
+    Material = "Neon"
+}
+
+-- Таблица для хранения оригинальных свойств и измененных хитбоксов
+local originalProperties = {}
+local hitboxParts = {}
+
+-- Функция для сохранения оригинальных свойств
+local function saveOriginalProperties(player)
+    if player.Character then
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart and not originalProperties[player] then
+            originalProperties[player] = {
+                Size = humanoidRootPart.Size,
+                Transparency = humanoidRootPart.Transparency,
+                BrickColor = humanoidRootPart.BrickColor,
+                Material = humanoidRootPart.Material,
+                CanCollide = humanoidRootPart.CanCollide
+            }
+        end
+    end
+end
+
+-- Функция для восстановления оригинальных свойств
+local function restoreOriginalProperties(player)
+    if originalProperties[player] and player.Character then
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            humanoidRootPart.Size = originalProperties[player].Size
+            humanoidRootPart.Transparency = originalProperties[player].Transparency
+            humanoidRootPart.BrickColor = originalProperties[player].BrickColor
+            humanoidRootPart.Material = originalProperties[player].Material
+            humanoidRootPart.CanCollide = originalProperties[player].CanCollide
+        end
+    end
+    if hitboxParts[player] then
+        hitboxParts[player] = nil
+    end
+end
+
+-- Функция для применения настроек хитбокса
+local function applyHitboxSettings(player)
+    if not HitboxSettings.Enabled then return end
+    
+    if player.Character then
+        local humanoidRootPart = player.Character:FindFirstChild("HumanoidRootPart")
+        if humanoidRootPart then
+            -- Сохраняем оригинальные свойства перед изменением
+            saveOriginalProperties(player)
+            
+            -- Вычисляем новый размер на основе настроек
+            local originalSize = originalProperties[player] and originalProperties[player].Size or humanoidRootPart.Size
+            local newSize = Vector3.new(
+                originalSize.X * HitboxSettings.WidthScale * HitboxSettings.OverallScale,
+                originalSize.Y * HitboxSettings.HeightScale * HitboxSettings.OverallScale,
+                originalSize.Z * HitboxSettings.DepthScale * HitboxSettings.OverallScale
+            )
+            
+            -- Применяем изменения
+            humanoidRootPart.Size = newSize
+            humanoidRootPart.Transparency = HitboxSettings.Transparency
+            humanoidRootPart.BrickColor = BrickColor.new(HitboxSettings.Color)
+            humanoidRootPart.Material = HitboxSettings.Material
+            humanoidRootPart.CanCollide = false
+            
+            hitboxParts[player] = true
+        end
+    end
+end
+
+-- Функция для включения/выключения системы хитбоксов
+local function toggleHitboxSystem()
+    if HitboxSettings.Enabled then
+        -- Включаем систему хитбоксов
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer then
+                applyHitboxSettings(player)
+            end
+        end
+    else
+        -- Выключаем систему хитбоксов - восстанавливаем оригинальные свойства
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer then
+                restoreOriginalProperties(player)
+            end
+        end
+    end
+end
+
+-- Функция для обновления всех хитбоксов
+local function updateAllHitboxes()
+    if HitboxSettings.Enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer then
+                applyHitboxSettings(player)
+            end
+        end
+    end
+end
+
+-- Обработчик нажатия клавиши для переключения хитбоксов
+local hitboxKeyConnection
+hitboxKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
+    if gameProcessed then return end
+    
+    if input.KeyCode == HitboxSettings.ToggleKey then
+        HitboxSettings.Enabled = not HitboxSettings.Enabled
+        toggleHitboxSystem()
+    end
+end)
+
+-- Основной цикл для хитбоксов
+local hitboxLoopConnection
+hitboxLoopConnection = RunService.Heartbeat:Connect(function()
+    if HitboxSettings.Enabled then
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer and player.Character then
+                pcall(function()
+                    applyHitboxSettings(player)
+                end)
+            end
+        end
+    end
+end)
+
+-- Очистка при выходе игрока
+Players.PlayerRemoving:Connect(function(player)
+    originalProperties[player] = nil
+    hitboxParts[player] = nil
+end)
 
 -- =============================================================================
 -- IMPROVED HINT SYSTEM
@@ -828,7 +1185,8 @@ local function enableESP()
         updateCounter = updateCounter + deltaTime
         hintCheckCounter = hintCheckCounter + deltaTime
         
-        if updateCounter >= 1 then
+        -- Используем настраиваемую скорость обновления
+        if updateCounter >= ESPUpdateRate then
             updateCounter = 0
             
             for player, _ in pairs(activeESPGuis) do
@@ -1226,8 +1584,8 @@ end)
 -- =============================================================================
 
 local Window = Rayfield:CreateWindow({
-    Name = "ESP & Aimbot",
-    LoadingTitle = "ESP & Aimbot",
+    Name = "RADIO HUB",
+    LoadingTitle = "RADIO HUB",
     LoadingSubtitle = "by AI",
     ConfigurationSaving = {
         Enabled = true,
@@ -1242,9 +1600,40 @@ local Window = Rayfield:CreateWindow({
     KeySystem = false,
 })
 
-local MainTab = Window:CreateTab("Main", 4483362458)
+-- Функция для безопасного создания элементов интерфейса
+local function safeCreateElement(tab, elementType, options)
+    local success, result = pcall(function()
+        if elementType == "Toggle" then
+            return tab:CreateToggle(options)
+        elseif elementType == "Slider" then
+            return tab:CreateSlider(options)
+        elseif elementType == "Button" then
+            return tab:CreateButton(options)
+        elseif elementType == "Dropdown" then
+            return tab:CreateDropdown(options)
+        elseif elementType == "ColorPicker" then
+            return tab:CreateColorPicker(options)
+        elseif elementType == "Keybind" then
+            return tab:CreateKeybind(options)
+        elseif elementType == "Label" then
+            return tab:CreateLabel(options)
+        elseif elementType == "Section" then
+            return tab:CreateSection(options)
+        end
+    end)
+    
+    if not success then
+        warn("Failed to create " .. elementType .. ": " .. tostring(result))
+        return nil
+    end
+    
+    return result
+end
 
-local ESPToggle = MainTab:CreateToggle({
+-- ESP Tab
+local ESPTab = Window:CreateTab("ESP", 4483362458)
+
+safeCreateElement(ESPTab, "Toggle", {
     Name = "ESP Enabled",
     CurrentValue = false,
     Flag = "ESPEnabled",
@@ -1257,19 +1646,18 @@ local ESPToggle = MainTab:CreateToggle({
     end,
 })
 
-local InfoSection = MainTab:CreateSection("Information")
-MainTab:CreateLabel("ESP Features:")
-MainTab:CreateLabel("- Player highlighting with HP")
-MainTab:CreateLabel("- Weapon detection (Killer/Sheriff)")
-MainTab:CreateLabel("- Team identification")
-MainTab:CreateLabel("- Hint system integration")
-MainTab:CreateLabel("- Dropped weapon highlighting")
+-- Information Section
+safeCreateElement(ESPTab, "Section", "Information")
+safeCreateElement(ESPTab, "Label", "ESP Features:")
+safeCreateElement(ESPTab, "Label", "- Player highlighting with HP")
+safeCreateElement(ESPTab, "Label", "- Weapon detection (Killer/Sheriff)")
+safeCreateElement(ESPTab, "Label", "- Team identification")
+safeCreateElement(ESPTab, "Label", "- Hint system integration")
+safeCreateElement(ESPTab, "Label", "- Dropped weapon highlighting")
 
-local SettingsTab = Window:CreateTab("Settings", 4483362458)
-
-local DistanceSection = SettingsTab:CreateSection("Distance Settings")
-
-local ItemDistanceSlider = SettingsTab:CreateSlider({
+-- Distance Settings Section
+safeCreateElement(ESPTab, "Section", "Distance Settings")
+safeCreateElement(ESPTab, "Slider", {
     Name = "Item Display Distance",
     Range = {10, 200},
     Increment = 5,
@@ -1282,20 +1670,32 @@ local ItemDistanceSlider = SettingsTab:CreateSlider({
     end,
 })
 
-local PerformanceSection = SettingsTab:CreateSection("Performance")
-local UpdateRateSlider = SettingsTab:CreateSlider({
-    Name = "Update Rate (seconds)",
+-- Performance Section
+safeCreateElement(ESPTab, "Section", "Performance")
+safeCreateElement(ESPTab, "Slider", {
+    Name = "Update Rate",
     Range = {0.5, 5},
-    Increment = 0.5,
-    Suffix = "s",
-    CurrentValue = 1,
-    Flag = "UpdateRate",
+    Increment = 0.1,
+    Suffix = " seconds",
+    CurrentValue = ESPUpdateRate,
+    Flag = "ESPUpdateRate",
     Callback = function(Value)
+        ESPUpdateRate = Value
+        -- При изменении скорости обновления перезапускаем ESP
+        if ESPEnabled then
+            disableESP()
+            wait(0.1)
+            enableESP()
+        end
     end,
 })
 
-local VisualSection = SettingsTab:CreateSection("Visual")
-local HighlightTransparencySlider = SettingsTab:CreateSlider({
+safeCreateElement(ESPTab, "Label", "Lower values = smoother but more CPU usage")
+safeCreateElement(ESPTab, "Label", "Higher values = less CPU but less smooth")
+
+-- Visual Section
+safeCreateElement(ESPTab, "Section", "Visual")
+safeCreateElement(ESPTab, "Slider", {
     Name = "Highlight Transparency",
     Range = {0, 1},
     Increment = 0.1,
@@ -1311,8 +1711,9 @@ local HighlightTransparencySlider = SettingsTab:CreateSlider({
     end,
 })
 
-local ButtonSection = SettingsTab:CreateSection("Controls")
-SettingsTab:CreateButton({
+-- Controls Section
+safeCreateElement(ESPTab, "Section", "Controls")
+safeCreateElement(ESPTab, "Button", {
     Name = "Refresh ESP",
     Callback = function()
         if ESPEnabled then
@@ -1323,21 +1724,23 @@ SettingsTab:CreateButton({
     end,
 })
 
-SettingsTab:CreateButton({
+safeCreateElement(ESPTab, "Button", {
     Name = "Clear All ESP",
     Callback = function()
         disableESP()
     end,
 })
 
-local DistanceInfoSection = SettingsTab:CreateSection("Distance Info")
-SettingsTab:CreateLabel("Item Distance: determines at what distance")
-SettingsTab:CreateLabel("player inventory items are displayed.")
-SettingsTab:CreateLabel("If distance is exceeded, '...' is shown")
+-- Distance Info Section
+safeCreateElement(ESPTab, "Section", "Distance Info")
+safeCreateElement(ESPTab, "Label", "Item Distance: determines at what distance")
+safeCreateElement(ESPTab, "Label", "player inventory items are displayed.")
+safeCreateElement(ESPTab, "Label", "If distance is exceeded, '...' is shown")
 
+-- Aimbot Tab
 local AimbotTab = Window:CreateTab("Aimbot", 4483362458)
 
-AimbotTab:CreateToggle({
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Aimbot Enabled",
     CurrentValue = AimbotSettings.Enabled,
     Flag = "AimbotEnabled",
@@ -1354,7 +1757,7 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateToggle({
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Team Check",
     CurrentValue = AimbotSettings.TeamCheck,
     Flag = "AimbotTeamCheck",
@@ -1363,14 +1766,14 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateLabel("Team Check:")
-AimbotTab:CreateLabel("- If you have a team: don't aim at teammates")
-AimbotTab:CreateLabel("- If no team (gun check mode):")
-AimbotTab:CreateLabel("  • Unarmed/Sheriff: can aim at killers only")
-AimbotTab:CreateLabel("  • Killer: can aim at everyone")
-AimbotTab:CreateLabel("  • No team detected: can aim at everyone")
+safeCreateElement(AimbotTab, "Label", "Team Check:")
+safeCreateElement(AimbotTab, "Label", "- If you have a team: don't aim at teammates")
+safeCreateElement(AimbotTab, "Label", "- If no team (gun check mode):")
+safeCreateElement(AimbotTab, "Label", "  • Unarmed/Sheriff: can aim at killers only")
+safeCreateElement(AimbotTab, "Label", "  • Killer: can aim at everyone")
+safeCreateElement(AimbotTab, "Label", "  • No team detected: can aim at everyone")
 
-AimbotTab:CreateSlider({
+safeCreateElement(AimbotTab, "Slider", {
     Name = "FOV Radius",
     Range = {10, 300},
     Increment = 5,
@@ -1383,7 +1786,7 @@ AimbotTab:CreateSlider({
     end,
 })
 
-AimbotTab:CreateToggle({
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Health Check",
     CurrentValue = AimbotSettings.HealthCheck,
     Flag = "AimbotHealthCheck",
@@ -1392,7 +1795,7 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateSlider({
+safeCreateElement(AimbotTab, "Slider", {
     Name = "Minimum Health",
     Range = {0, 100},
     Increment = 1,
@@ -1404,7 +1807,7 @@ AimbotTab:CreateSlider({
     end,
 })
 
-AimbotTab:CreateToggle({
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Wall Check",
     CurrentValue = AimbotSettings.WallCheck,
     Flag = "AimbotWallCheck",
@@ -1414,9 +1817,9 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateLabel("Wall Check: Aimbot only works when target is visible")
+safeCreateElement(AimbotTab, "Label", "Wall Check: Aimbot only works when target is visible")
 
-AimbotTab:CreateSlider({
+safeCreateElement(AimbotTab, "Slider", {
     Name = "Max Distance",
     Range = {50, 2000},
     Increment = 25,
@@ -1428,7 +1831,7 @@ AimbotTab:CreateSlider({
     end,
 })
 
-AimbotTab:CreateDropdown({
+safeCreateElement(AimbotTab, "Dropdown", {
     Name = "Lock Part",
     Options = {"Head", "HumanoidRootPart", "Torso"},
     CurrentValue = AimbotSettings.LockPart,
@@ -1443,7 +1846,10 @@ AimbotTab:CreateDropdown({
     end,
 })
 
-AimbotTab:CreateToggle({
+-- Random Aim Part Section
+safeCreateElement(AimbotTab, "Section", "Random Aim Part")
+
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Random Aim Part",
     CurrentValue = AimbotSettings.SwitchEnabled,
     Flag = "AimbotSwitchEnabled",
@@ -1459,7 +1865,7 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateSlider({
+safeCreateElement(AimbotTab, "Slider", {
     Name = "Min Switch Time",
     Range = {1, 10},
     Increment = 0.5,
@@ -1474,7 +1880,7 @@ AimbotTab:CreateSlider({
     end,
 })
 
-AimbotTab:CreateSlider({
+safeCreateElement(AimbotTab, "Slider", {
     Name = "Max Switch Time",
     Range = {1, 20},
     Increment = 0.5,
@@ -1489,7 +1895,7 @@ AimbotTab:CreateSlider({
     end,
 })
 
-AimbotTab:CreateToggle({
+safeCreateElement(AimbotTab, "Toggle", {
     Name = "Show FOV Circle",
     CurrentValue = FOVCircle.Visible,
     Flag = "ShowFOVCircle",
@@ -1498,9 +1904,280 @@ AimbotTab:CreateToggle({
     end,
 })
 
-AimbotTab:CreateSection("Trigger Key")
-AimbotTab:CreateLabel("Current Trigger Key: " .. AimbotSettings.TriggerKey)
-AimbotTab:CreateLabel("Hold this key to activate aimbot")
+safeCreateElement(AimbotTab, "Section", "Trigger Key")
+safeCreateElement(AimbotTab, "Label", "Current Trigger Key: " .. AimbotSettings.TriggerKey)
+safeCreateElement(AimbotTab, "Label", "Hold this key to activate aimbot")
 
+-- Hitbox Tab
+local HitboxTab = Window:CreateTab("Hitbox", 4483362458)
+
+-- Hitbox Section
+safeCreateElement(HitboxTab, "Section", "Hitbox Settings")
+
+safeCreateElement(HitboxTab, "Toggle", {
+    Name = "Hitbox Enabled",
+    CurrentValue = HitboxSettings.Enabled,
+    Flag = "HitboxEnabled",
+    Callback = function(Value)
+        HitboxSettings.Enabled = Value
+        toggleHitboxSystem()
+    end,
+})
+
+-- Keybind Section
+safeCreateElement(HitboxTab, "Section", "Keybind Settings")
+
+safeCreateElement(HitboxTab, "Keybind", {
+    Name = "Toggle Hitbox Keybind",
+    CurrentKeybind = HitboxSettings.ToggleKey,
+    HoldToInteract = false,
+    Flag = "HitboxKeybind",
+    Callback = function(Key)
+        HitboxSettings.ToggleKey = Key
+    end,
+})
+
+-- Hitbox Size Controls
+safeCreateElement(HitboxTab, "Section", "Hitbox Size Controls")
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Overall Scale",
+    Range = {1.0, 10.0},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = HitboxSettings.OverallScale,
+    Flag = "HitboxOverallScale",
+    Callback = function(Value)
+        HitboxSettings.OverallScale = Value
+        updateAllHitboxes()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Height Scale",
+    Range = {0.1, 5.0},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = HitboxSettings.HeightScale,
+    Flag = "HitboxHeightScale",
+    Callback = function(Value)
+        HitboxSettings.HeightScale = Value
+        updateAllHitboxes()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Width Scale",
+    Range = {0.1, 5.0},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = HitboxSettings.WidthScale,
+    Flag = "HitboxWidthScale",
+    Callback = function(Value)
+        HitboxSettings.WidthScale = Value
+        updateAllHitboxes()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Depth Scale",
+    Range = {0.1, 5.0},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = HitboxSettings.DepthScale,
+    Flag = "HitboxDepthScale",
+    Callback = function(Value)
+        HitboxSettings.DepthScale = Value
+        updateAllHitboxes()
+    end,
+})
+
+-- Hitbox Appearance
+safeCreateElement(HitboxTab, "Section", "Hitbox Appearance")
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Transparency",
+    Range = {0, 1},
+    Increment = 0.1,
+    Suffix = "",
+    CurrentValue = HitboxSettings.Transparency,
+    Flag = "HitboxTransparency",
+    Callback = function(Value)
+        HitboxSettings.Transparency = Value
+        updateAllHitboxes()
+    end,
+})
+
+safeCreateElement(HitboxTab, "ColorPicker", {
+    Name = "Hitbox Color",
+    Color = HitboxSettings.Color,
+    Flag = "HitboxColor",
+    Callback = function(Value)
+        HitboxSettings.Color = Value
+        updateAllHitboxes()
+    end
+})
+
+safeCreateElement(HitboxTab, "Dropdown", {
+    Name = "Material",
+    Options = {"Neon", "Plastic", "Wood", "Slate", "Concrete", "CorrodedMetal", "DiamondPlate", "Foil", "Grass", "Ice", "Marble", "Granite", "Brick", "Pebble", "Sand", "Fabric", "SmoothPlastic", "Metal", "WoodPlanks", "Cobblestone", "Air", "Water", "Rock", "Glacier", "Snow", "Sandstone", "Mud", "Basalt", "Ground", "CrackedLava", "Asphalt", "LeafyGrass", "Salt", "Limestone", "Pavement"},
+    CurrentValue = HitboxSettings.Material,
+    Flag = "HitboxMaterial",
+    Callback = function(Value)
+        HitboxSettings.Material = Value
+        updateAllHitboxes()
+    end,
+})
+
+-- Door Handle Section
+safeCreateElement(HitboxTab, "Section", "Door Handle Settings")
+
+safeCreateElement(HitboxTab, "Toggle", {
+    Name = "Door Handle Modification",
+    CurrentValue = DoorHandleSettings.Enabled,
+    Flag = "DoorHandleEnabled",
+    Callback = function(Value)
+        DoorHandleSettings.Enabled = Value
+        toggleDoorHandleSystem()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Slider", {
+    Name = "Door Handle Size Multiplier",
+    Range = {2, 5},
+    Increment = 0.1,
+    Suffix = "x",
+    CurrentValue = DoorHandleSettings.SizeMultiplier,
+    Flag = "DoorHandleSize",
+    Callback = function(Value)
+        DoorHandleSettings.SizeMultiplier = Value
+        updateAllDoorHandles()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Toggle", {
+    Name = "Disable Door Handle Collision",
+    CurrentValue = DoorHandleSettings.NoCollision,
+    Flag = "DoorHandleNoCollision",
+    Callback = function(Value)
+        DoorHandleSettings.NoCollision = Value
+        updateAllDoorHandles()
+    end,
+})
+
+-- Hitbox Controls Section
+safeCreateElement(HitboxTab, "Section", "Hitbox Controls")
+
+safeCreateElement(HitboxTab, "Button", {
+    Name = "Refresh Hitboxes",
+    Callback = function()
+        updateAllHitboxes()
+    end,
+})
+
+safeCreateElement(HitboxTab, "Button", {
+    Name = "Reset All Hitboxes",
+    Callback = function()
+        for _, player in ipairs(Players:GetPlayers()) do
+            if player ~= localPlayer then
+                restoreOriginalProperties(player)
+            end
+        end
+        if HitboxSettings.Enabled then
+            toggleHitboxSystem()
+        end
+    end,
+})
+
+-- Others Tab
+local OthersTab = Window:CreateTab("Others", 4483362458)
+
+-- FOV Changer Section
+safeCreateElement(OthersTab, "Section", "FOV Changer")
+
+safeCreateElement(OthersTab, "Toggle", {
+    Name = "FOV Changer Enabled",
+    CurrentValue = FOVChangerSettings.Enabled,
+    Flag = "FOVChangerEnabled",
+    Callback = function(Value)
+        FOVChangerSettings.Enabled = Value
+        toggleFOVChanger()
+    end,
+})
+
+safeCreateElement(OthersTab, "Slider", {
+    Name = "FOV Value",
+    Range = {50, 120},
+    Increment = 1,
+    Suffix = "°",
+    CurrentValue = FOVChangerSettings.FOVValue,
+    Flag = "FOVValue",
+    Callback = function(Value)
+        FOVChangerSettings.FOVValue = Value
+        if FOVChangerSettings.Enabled then
+            Camera.FieldOfView = FOVChangerSettings.FOVValue
+        end
+    end,
+})
+
+-- Third Person Unlocker Section
+safeCreateElement(OthersTab, "Section", "Third Person Unlocker")
+
+safeCreateElement(OthersTab, "Toggle", {
+    Name = "Third Person Unlocker",
+    CurrentValue = ThirdPersonSettings.Enabled,
+    Flag = "ThirdPersonEnabled",
+    Callback = function(Value)
+        ThirdPersonSettings.Enabled = Value
+        toggleThirdPersonUnlocker()
+    end,
+})
+
+safeCreateElement(OthersTab, "Slider", {
+    Name = "Max Zoom Distance",
+    Range = {5, 50},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = ThirdPersonSettings.MaxZoomDistance,
+    Flag = "ThirdPersonMaxZoom",
+    Callback = function(Value)
+        ThirdPersonSettings.MaxZoomDistance = Value
+        if ThirdPersonSettings.Enabled then
+            localPlayer.CameraMaxZoomDistance = Value
+        end
+    end,
+})
+
+safeCreateElement(OthersTab, "Slider", {
+    Name = "Min Zoom Distance",
+    Range = {0, 10},
+    Increment = 1,
+    Suffix = " studs",
+    CurrentValue = ThirdPersonSettings.MinZoomDistance,
+    Flag = "ThirdPersonMinZoom",
+    Callback = function(Value)
+        ThirdPersonSettings.MinZoomDistance = Value
+        if ThirdPersonSettings.Enabled then
+            localPlayer.CameraMinZoomDistance = Value
+        end
+    end,
+})
+
+-- Загружаем конфигурацию
 Rayfield:LoadConfiguration()
-startAimbotLoop() 
+
+-- Запускаем системы
+startAimbotLoop()
+
+-- Initialize systems if enabled
+if FOVChangerSettings.Enabled then
+    toggleFOVChanger()
+end
+
+if DoorHandleSettings.Enabled then
+    toggleDoorHandleSystem()
+end
+
+if ThirdPersonSettings.Enabled then
+    toggleThirdPersonUnlocker()
+end
