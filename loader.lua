@@ -464,7 +464,7 @@ local function getStandardBodyParts(npcModel)
     
     for _, partName in ipairs(standardParts) do
         local part = npcModel:FindFirstChild(partName)
-        if part and part:IsA("BasePart") and part.Transparency < 1 then
+        if part and part:IsA("BasePart") then
             table.insert(bodyParts, part)
         end
     end
@@ -551,20 +551,29 @@ local function getAccurateScreenBoundingBox(npcModel)
     
     local minX, minY = math.huge, math.huge
     local maxX, maxY = -math.huge, -math.huge
-    local anyVisible = false
+    local anyOnScreen = false
     
     for _, corner in ipairs(corners) do
         local screenPoint, onScreen = Camera:WorldToViewportPoint(corner)
+        
+        local screenX, screenY
+        
         if onScreen then
-            anyVisible = true
-            minX = math.min(minX, screenPoint.X)
-            minY = math.min(minY, screenPoint.Y)
-            maxX = math.max(maxX, screenPoint.X)
-            maxY = math.max(maxY, screenPoint.Y)
+            screenX = screenPoint.X
+            screenY = screenPoint.Y
+            anyOnScreen = true
+        else
+            screenX = math.clamp(screenPoint.X, 0, Camera.ViewportSize.X)
+            screenY = math.clamp(screenPoint.Y, 0, Camera.ViewportSize.Y)
         end
+        
+        minX = math.min(minX, screenX)
+        minY = math.min(minY, screenY)
+        maxX = math.max(maxX, screenX)
+        maxY = math.max(maxY, screenY)
     end
     
-    if not anyVisible then
+    if not anyOnScreen then
         return nil
     end
     
