@@ -157,8 +157,8 @@ end
 
 local teamColors = {
     ["Street Gang"] = Color3.fromRGB(255, 0, 0),
-    ["Bratva"] = Color3.fromRGB(0, 0, 255),
-    ["Nubagami"] = Color3.fromRGB(0, 255, 0),
+    ["Bratva"] = Color3.fromRGB(139, 0, 255),
+    ["Nubagami"] = Color3.fromRGB(140, 0, 15),
     ["Heist crew"] = Color3.fromRGB(255, 255, 0),
     ["Politsiya"] = Color3.fromRGB(0, 255, 255),
     ["The Zoo"] = Color3.fromRGB(255, 0, 255),
