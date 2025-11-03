@@ -169,7 +169,9 @@ local teamColors = {
     ["NETO"] = Color3.fromRGB(128, 128, 128),
     ["Juggernaut"] = Color3.fromRGB(139, 0, 0),
     ["Robbers"] = Color3.fromRGB(255, 140, 0),
-    ["Hiders"] = Color3.fromRGB(255, 200, 0)
+    ["Hiders"] = Color3.fromRGB(255, 200, 0),
+	["Team 1"] = Color3.fromRGB(255, 100, 100),
+    ["Team 2"] = Color3.fromRGB(100, 100, 255)
 }
 
 local teams = {
@@ -220,6 +222,12 @@ local teams = {
     ["Hiders"] = {
         "Timofey Nevelyskiy", "Sasha Karpov", "Anatoly Kravtsov", "Asya Rozhkova", "Anton Panikov", 
         "Valentina Artyomovna", "Artur Kombatov", "Aleksandr Kristavitskiy", "David Evseev", "Yulya Serdechainya","Stepan Fendrikov",
+    },
+    ["Team 1"] = {
+        "Timofei Obolensky", "Nikita Ukhov", "Valentin Venediktov", "Leonid Yaroslavsky", "Yuliy Parshnikov", "Sergei Sedov"
+    },
+    ["Team 2"] = {
+        "Vladislav Yefimov", "Dmitry Sagadaev", "Sergei Kulik", "Miroslav Myshelov", "Nikolay Banin", "Alexei Slavny"
     }
 }
 
@@ -3139,4 +3147,4 @@ end
 
 if LocalAmmoDisplaySettings.Enabled then
     toggleLocalAmmoDisplay()
-end
+end 
