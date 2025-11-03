@@ -141,6 +141,8 @@ local AimbotSettings = {
     CheckPrecision = 2.0
 }
 
+local weaponMaxAmmo = {}
+
 local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911", "RR-LCP", "DarkSteel K1911", "Door'bler TIGERSTRIPES", "HEARBALLA", "RR-LCP10", "KamatovDRUM", "Charcoal Steel SKORPION", "SKORPION 'AMIRNOV", "Rosen Nagan", "M-1020", "RR-LightCompactPistolS10", "JTS225-ObrezGILDED", "KR7S", "Mooser", "PTRB-41", "TEKE-9", "RUZKH-12", "APZ", "HW-K7", "Sawn-offGILDED", "Memorial"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED", "RR-Snubby10", "RR-SnubbyGILDED", "Mini Ranch Rifle"} 
 
@@ -1304,7 +1306,22 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
         local magValue = equippedWeapon:GetAttribute("mag")
         
         if magValue then
-            ammoInfo = tostring(magValue)
+            local weaponKey = equippedWeapon.Name .. "_" .. tostring(equippedWeapon:GetDebugId())
+            
+            if not weaponMaxAmmo[weaponKey] then
+                weaponMaxAmmo[weaponKey] = {
+                    maxAmmo = magValue,
+                    lastSeen = tick()
+                }
+            else
+                if magValue > weaponMaxAmmo[weaponKey].maxAmmo then
+                    weaponMaxAmmo[weaponKey].maxAmmo = magValue
+                end
+                weaponMaxAmmo[weaponKey].lastSeen = tick()
+            end
+            
+            local maxAmmo = weaponMaxAmmo[weaponKey].maxAmmo
+            ammoInfo = tostring(magValue) .. "/" .. tostring(maxAmmo)
             
             local chamberedValue = equippedWeapon:GetAttribute("chambered")
             
@@ -1328,6 +1345,23 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
     
     return ammoInfo, chamberStatus
 end
+
+local function cleanupWeaponAmmoCache()
+    local currentTime = tick()
+    local cleanupThreshold = 300
+    
+    for weaponKey, data in pairs(weaponMaxAmmo) do
+        if currentTime - data.lastSeen > cleanupThreshold then
+            weaponMaxAmmo[weaponKey] = nil
+        end
+    end
+end
+
+task.spawn(function()
+    while task.wait(60) do
+        cleanupWeaponAmmoCache()
+    end
+end)
 
 local function createWeaponAmmoDisplay(tool)
     if localAmmoBillboard then
@@ -3147,4 +3181,4 @@ end
 
 if LocalAmmoDisplaySettings.Enabled then
     toggleLocalAmmoDisplay()
-end 
+end
