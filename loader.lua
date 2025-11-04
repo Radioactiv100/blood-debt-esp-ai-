@@ -116,6 +116,7 @@ local HitboxSettings = {
     Material = "Neon"
 }
 
+-- Обновленные настройки аимбота
 local AimbotSettings = {
     Enabled = false,
     TeamCheck = true,
@@ -123,19 +124,13 @@ local AimbotSettings = {
     HealthCheck = true,
     MinHealth = 5,
     TriggerKey = "MouseButton2",
-    LockPart = "Head",
+    AimParts = {"Head"}, -- По умолчанию только голова
+    SwitchInterval = {Min = 2, Max = 8},
     FOV = 90,
     Smoothness = 0.0,
-    
-    SwitchEnabled = false,
-    SwitchInterval = {Min = 2, Max = 8},
-    SwitchParts = {"Head", "Torso"},
-    
     MaxDistance = 1000,
-    
     TransparencyThreshold = 0.6,
     ForceFieldAlwaysTransparent = true,
-    
     MultiLayerCheck = true,
     MaxWallLayers = 3,
     CheckPrecision = 2.0
@@ -2054,11 +2049,12 @@ local function disableESP()
     playersMatchingHints = {}
 end
 
+-- АИМБОТ СИСТЕМА (ОБНОВЛЕННАЯ)
 local AimbotEnabled = false
 local CurrentTarget = nil
+local CurrentLockPart = AimbotSettings.AimParts[1]
 local LastSwitchTime = tick()
 local NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
-local CurrentLockPart = AimbotSettings.LockPart
 local VisibilityCache = {}
 local LastWallCheckTime = 0
 local LastTargetUpdateTime = 0
@@ -2074,11 +2070,23 @@ FOVCircle.Thickness = 2
 FOVCircle.Filled = false
 FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
+-- Функция для получения текущей части прицеливания
 local function GetCurrentLockPart()
-    if AimbotSettings.SwitchEnabled then
-        return CurrentLockPart
+    local selectedParts = AimbotSettings.AimParts
+    
+    -- Если выбрана только одна часть - используем ее
+    if #selectedParts == 1 then
+        return selectedParts[1]
+    -- Если выбрано несколько частей - случайный выбор с интервалом
     else
-        return AimbotSettings.LockPart
+        if tick() - LastSwitchTime >= NextSwitchTime then
+            local randomIndex = math.random(1, #selectedParts)
+            CurrentLockPart = selectedParts[randomIndex]
+            LastSwitchTime = tick()
+            NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
+            VisibilityCache = {} -- Очищаем кэш видимости при смене части
+        end
+        return CurrentLockPart
     end
 end
 
@@ -2296,18 +2304,6 @@ local function GetClosestTarget()
     return closestTarget
 end
 
-local function SwitchLockPart()
-    if not AimbotSettings.SwitchEnabled then return end
-    
-    local currentIndex = table.find(AimbotSettings.SwitchParts, CurrentLockPart) or 1
-    local nextIndex = (currentIndex % #AimbotSettings.SwitchParts) + 1
-    CurrentLockPart = AimbotSettings.SwitchParts[nextIndex]
-    LastSwitchTime = tick()
-    NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
-    
-    VisibilityCache = {}
-end
-
 local function AimAtTarget(target)
     if not target or not target.Character then return end
     
@@ -2329,10 +2325,6 @@ local function startAimbotLoop()
         frameCounter = frameCounter + 1
         
         if frameCounter % 3 == 0 then
-            if AimbotSettings.SwitchEnabled and tick() - LastSwitchTime >= NextSwitchTime then
-                SwitchLockPart()
-            end
-            
             local currentTime = tick()
             if AimbotEnabled and CurrentTarget and AimbotSettings.Enabled then
                 if currentTime - LastWallCheckTime >= 0.1 then
@@ -2359,6 +2351,7 @@ local function startAimbotLoop()
     end)
 end
 
+-- ИНТЕРФЕЙС
 local Window = Rayfield:CreateWindow({
     Name = "RADIO HUB",
     LoadingTitle = "RADIO HUB",
@@ -2394,6 +2387,8 @@ local function safeCreateElement(tab, elementType, options)
             return tab:CreateLabel(options)
         elseif elementType == "Section" then
             return tab:CreateSection(options)
+        elseif elementType == "Paragraph" then
+            return tab:CreateParagraph(options)
         end
     end)
     
@@ -2727,7 +2722,7 @@ safeCreateElement(AimbotTab, "Slider", {
 })
 
 safeCreateElement(AimbotTab, "Section", {
-    Name = "Advanced Wall Check"
+    Name = "Wall Check"
 })
 
 safeCreateElement(AimbotTab, "Toggle", {
@@ -2752,39 +2747,64 @@ safeCreateElement(AimbotTab, "Slider", {
     end,
 })
 
-safeCreateElement(AimbotTab, "Dropdown", {
-    Name = "Lock Part",
-    Options = {"Head", "HumanoidRootPart", "Torso"},
-    CurrentValue = AimbotSettings.LockPart,
-    Flag = "AimbotLockPart",
-    Callback = function(Value)
-        AimbotSettings.LockPart = Value
-        VisibilityCache = {}
-        
-        if not AimbotSettings.SwitchEnabled then
-            CurrentLockPart = Value
-        end
-    end,
+safeCreateElement(AimbotTab, "Section", {
+    Name = "Aim Part System"
 })
 
 safeCreateElement(AimbotTab, "Section", {
-    Name = "Random Aim Part"
+    Name = "Aim Part System - 1 part: aim at that part only | 2+ parts: randomly switch"
 })
 
-safeCreateElement(AimbotTab, "Toggle", {
-    Name = "Random Aim Part",
-    CurrentValue = AimbotSettings.SwitchEnabled,
-    Flag = "AimbotSwitchEnabled",
-    Callback = function(Value)
-        AimbotSettings.SwitchEnabled = Value
-        if Value then
-            LastSwitchTime = tick()
-            NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
-        else
-            CurrentLockPart = AimbotSettings.LockPart
+local bodyParts = {
+    "Head", "Torso", "HumanoidRootPart", "Left Arm", "Right Arm", "Left Leg", "Right Leg"
+}
+
+local partToggles = {}
+
+for _, partName in ipairs(bodyParts) do
+    local isEnabled = table.find(AimbotSettings.AimParts, partName) ~= nil
+    
+    partToggles[partName] = safeCreateElement(AimbotTab, "Toggle", {
+        Name = partName,
+        CurrentValue = isEnabled,
+        Flag = "AimbotPart_" .. partName,
+        Callback = function(Value)
+            if Value then
+                -- Добавляем часть в список, если ее там нет
+                if table.find(AimbotSettings.AimParts, partName) == nil then
+                    table.insert(AimbotSettings.AimParts, partName)
+                end
+            else
+                -- Удаляем часть из списка
+                local index = table.find(AimbotSettings.AimParts, partName)
+                if index then
+                    table.remove(AimbotSettings.AimParts, index)
+                end
+                
+                -- Если список стал пустым, добавляем Head по умолчанию
+                if #AimbotSettings.AimParts == 0 then
+                    table.insert(AimbotSettings.AimParts, "Head")
+                    partToggles["Head"]:Set(true)
+                end
+            end
+            
+            -- Обновляем текущую часть прицеливания
+            if #AimbotSettings.AimParts == 1 then
+                CurrentLockPart = AimbotSettings.AimParts[1]
+            else
+                -- При изменении списка частей сбрасываем таймер
+                LastSwitchTime = tick()
+                NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
+            end
+            
+            VisibilityCache = {} -- Очищаем кэш видимости
         end
-        VisibilityCache = {}
-    end,
+    })
+end
+
+safeCreateElement(AimbotTab, "Paragraph", {
+    Title = "Aim Part System Info",
+    Content = "1 part - aim at that part only\n2 or more parts - randomly switch between selected parts"
 })
 
 safeCreateElement(AimbotTab, "Slider", {
@@ -2813,6 +2833,28 @@ safeCreateElement(AimbotTab, "Slider", {
         AimbotSettings.SwitchInterval.Max = Value
         if AimbotSettings.SwitchInterval.Min > Value then
             AimbotSettings.SwitchInterval.Min = Value
+        end
+    end,
+})
+
+safeCreateElement(AimbotTab, "Button", {
+    Name = "Select All Parts",
+    Callback = function()
+        for partName, toggle in pairs(partToggles) do
+            if toggle then
+                toggle:Set(true)
+            end
+        end
+    end,
+})
+
+safeCreateElement(AimbotTab, "Button", {
+    Name = "Select Head Only",
+    Callback = function()
+        for partName, toggle in pairs(partToggles) do
+            if toggle then
+                toggle:Set(partName == "Head")
+            end
         end
     end,
 })
@@ -3073,6 +3115,7 @@ safeCreateElement(OthersTab, "Slider", {
     end,
 })
 
+-- ОБРАБОТЧИКИ СОБЫТИЙ
 local hitboxKeyConnection
 hitboxKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -3155,6 +3198,7 @@ Players.PlayerRemoving:Connect(function(player)
     hitboxParts[player] = nil
 end)
 
+-- ЗАПУСК СИСТЕМ
 Rayfield:LoadConfiguration()
 
 startAimbotLoop()
