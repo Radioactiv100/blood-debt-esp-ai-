@@ -116,7 +116,7 @@ local HitboxSettings = {
     Material = "Neon"
 }
 
--- Обновленные настройки аимбота
+-- ОБНОВЛЕННЫЕ НАСТРОЙКИ АИМБОТА
 local AimbotSettings = {
     Enabled = false,
     TeamCheck = true,
@@ -124,10 +124,11 @@ local AimbotSettings = {
     HealthCheck = true,
     MinHealth = 5,
     TriggerKey = "MouseButton2",
-    AimParts = {"Head"}, -- По умолчанию только голова
+    AimParts = {"Head"},
     SwitchInterval = {Min = 2, Max = 8},
     FOV = 90,
-    Smoothness = 0.0,
+    Smoothness = 0.1,
+    PredictionStrength = 0.0,
     MaxDistance = 1000,
     TransparencyThreshold = 0.6,
     ForceFieldAlwaysTransparent = true,
@@ -2070,6 +2071,41 @@ FOVCircle.Thickness = 2
 FOVCircle.Filled = false
 FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
+-- Функция для получения предсказанной позиции
+local function GetPredictedPosition(targetPart, targetVelocity)
+    if AimbotSettings.PredictionStrength <= 0 then
+        return targetPart.Position
+    end
+    
+    local distance = (targetPart.Position - Camera.CFrame.Position).Magnitude
+    
+    -- Базовое время полета (можно настроить под конкретную игру)
+    local baseTime = distance / 1000
+    
+    -- Учитываем силу предсказания
+    local predictionTime = baseTime * AimbotSettings.PredictionStrength
+    
+    -- Предсказываем позицию
+    local predictedPosition = targetPart.Position + (targetVelocity * predictionTime)
+    
+    return predictedPosition
+end
+
+-- Функция для плавного наведения
+local function SmoothAim(currentCFrame, targetPosition, smoothness)
+    if smoothness <= 0 then
+        return CFrame.new(currentCFrame.Position, targetPosition)
+    end
+    
+    local currentLookVector = currentCFrame.LookVector
+    local targetLookVector = (targetPosition - currentCFrame.Position).Unit
+    
+    -- Интерполяция между текущим и целевым направлением
+    local smoothedLookVector = currentLookVector:Lerp(targetLookVector, 1 - smoothness)
+    
+    return CFrame.new(currentCFrame.Position, currentCFrame.Position + smoothedLookVector)
+end
+
 -- Функция для получения текущей части прицеливания
 local function GetCurrentLockPart()
     local selectedParts = AimbotSettings.AimParts
@@ -2310,7 +2346,22 @@ local function AimAtTarget(target)
     local targetPart = target.Character:FindFirstChild(GetCurrentLockPart())
     if not targetPart then return end
     
-    Camera.CFrame = CFrame.new(Camera.CFrame.Position, targetPart.Position)
+    -- Получаем скорость цели для предсказания
+    local targetVelocity = Vector3.new(0, 0, 0)
+    local humanoidRootPart = target.Character:FindFirstChild("HumanoidRootPart")
+    if humanoidRootPart then
+        targetVelocity = humanoidRootPart.Velocity
+    end
+    
+    -- Получаем предсказанную позицию
+    local predictedPosition = GetPredictedPosition(targetPart, targetVelocity)
+    
+    -- Применяем плавное наведение
+    if AimbotSettings.Smoothness > 0 then
+        Camera.CFrame = SmoothAim(Camera.CFrame, predictedPosition, AimbotSettings.Smoothness)
+    else
+        Camera.CFrame = CFrame.new(Camera.CFrame.Position, predictedPosition)
+    end
 end
 
 local frameCounter = 0
@@ -2700,6 +2751,34 @@ safeCreateElement(AimbotTab, "Slider", {
     end,
 })
 
+safeCreateElement(AimbotTab, "Section", {
+    Name = "Aiming Settings"
+})
+
+safeCreateElement(AimbotTab, "Slider", {
+    Name = "Smoothness",
+    Range = {0.0, 1.0},
+    Increment = 0.05,
+    Suffix = "",
+    CurrentValue = AimbotSettings.Smoothness,
+    Flag = "AimbotSmoothness",
+    Callback = function(Value)
+        AimbotSettings.Smoothness = Value
+    end,
+})
+
+safeCreateElement(AimbotTab, "Slider", {
+    Name = "Prediction Strength",
+    Range = {0.0, 1.0},
+    Increment = 0.05,
+    Suffix = "",
+    CurrentValue = AimbotSettings.PredictionStrength,
+    Flag = "AimbotPrediction",
+    Callback = function(Value)
+        AimbotSettings.PredictionStrength = Value
+    end,
+})
+
 safeCreateElement(AimbotTab, "Toggle", {
     Name = "Health Check",
     CurrentValue = AimbotSettings.HealthCheck,
@@ -2797,7 +2876,7 @@ for _, partName in ipairs(bodyParts) do
                 NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
             end
             
-            VisibilityCache = {} -- Очищаем кэш видимости
+            VisibilityCache = {} 
         end
     })
 end
@@ -2805,8 +2884,8 @@ end
 safeCreateElement(AimbotTab, "Paragraph", {
     Title = "Aim Part System Info",
     Content = "1 part - aim at that part only\n2 or more parts - randomly switch between selected parts"
-})
-
+	})
+	
 safeCreateElement(AimbotTab, "Slider", {
     Name = "Min Switch Time",
     Range = {1, 10},
