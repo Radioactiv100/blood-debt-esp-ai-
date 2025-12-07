@@ -208,7 +208,8 @@ local teams = {
     ["NETO"] = {
         "Andrew Murphy", "Marshall Fletcher", "Jenson Barnes", "Aaron Knight", "Marco Hughes", "Michael Cooper", 
 		"Gabriel Hall", "Noah Khan", "Harry Thompson", "Lamar Farrell", "Jordan Henderson", "Antonio Lindsay", 
-		"Sam Jordan", "Tom Stone", "Samuel Lawson", "Julio Bishop", "Morgan Calhoun", "Oween Lee"
+		"Sam Jordan", "Tom Stone", "Samuel Lawson", "Julio Bishop", "Morgan Calhoun", "Oween Lee", "Westrn Ramirez", "Aidyn Sparks", "Harvey Nicholson"
+		"Dylan Wells", "Jack Dawson"
     },
     ["Juggernaut"] = {
         "Stanislav", "Veronika Kazakova", "Mason Jr.", "Traktirnikov Gennadiy", "Vanya Aleksandrov"
