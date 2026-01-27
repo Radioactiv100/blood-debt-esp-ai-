@@ -6,6 +6,7 @@ local UserInputService = game:GetService("UserInputService")
 local localPlayer = Players.LocalPlayer
 local Camera = workspace.CurrentCamera
 local ReplicatedStorage = game:GetService("ReplicatedStorage")
+local Drawing = Drawing or {}
 
 local Rayfield
 local success, err = pcall(function()
@@ -75,9 +76,12 @@ local FOVChangerSettings = {
 
 local LocalAmmoDisplaySettings = {
     Enabled = false,
-    TextColor = Color3.new(1, 1, 1),
     TextSize = 36,
     Font = Enum.Font.GothamBold
+}
+
+local InstantProximityPromptSettings = {
+    Enabled = false
 }
 
 local ESPEnabled = false
@@ -137,7 +141,335 @@ local AimbotSettings = {
     CheckPrecision = 2.0
 }
 
+
+
 local weaponMaxAmmo = {}
+
+-- Instant ProximityPrompt Manager
+local ProximityManager = {Proximities = {}}
+
+function ProximityManager:Add(prompt)
+	if prompt:IsA("ProximityPrompt") then
+		table.insert(self.Proximities, prompt)
+		
+		-- Set HoldDuration to 0 for instant activation
+		if InstantProximityPromptSettings.Enabled then
+			prompt.HoldDuration = 0
+		end
+	end
+end
+
+function ProximityManager:Remove(prompt)
+	local t = self.Proximities
+	for i = 1, #t do
+		if t[i] == prompt then
+			t[i] = t[#t]
+			t[#t] = nil
+			break
+		end
+	end
+end
+
+function ProximityManager:Pulse()
+	-- Clean up invalid prompts
+	local validPrompts = {}
+	local tIdx = 0
+
+	for i = 1, #self.Proximities do
+        local t = self.Proximities[i]
+        if t:IsDescendantOf(workspace) then
+            tIdx = tIdx + 1
+            validPrompts[tIdx] = t
+        else
+        	-- Remove invalid prompts
+        	self:Remove(t)
+        end
+    end
+    
+    self.Proximities = validPrompts
+end
+
+function ProximityManager:UpdateAllPrompts()
+	for _, prompt in ipairs(self.Proximities) do
+		if prompt and prompt.Parent then
+			if InstantProximityPromptSettings.Enabled then
+				prompt.HoldDuration = 0
+			else
+				-- Restore original hold duration if needed
+				-- You might want to store original values if restoration is needed
+			end
+		end
+	end
+end
+
+local function getProximityPrompts()
+	local prompts = {}
+	for _, descendant in ipairs(workspace:GetDescendants()) do
+		if descendant:IsA("ProximityPrompt") then
+			table.insert(prompts, descendant)
+		end
+	end
+	return prompts
+end
+
+local function initializeProximityManager()
+	local queried = getProximityPrompts()
+	for _, v in ipairs(queried) do
+		ProximityManager:Add(v)
+	end
+
+	workspace.DescendantAdded:Connect(function(inst)
+		ProximityManager:Add(inst)
+	end)
+	workspace.DescendantRemoving:Connect(function(inst)
+		if inst:IsA("ProximityPrompt") then 
+			ProximityManager:Remove(inst) 
+		end
+	end)
+	RunService.RenderStepped:Connect(function()
+		ProximityManager:Pulse()
+	end)
+end
+
+local function toggleInstantProximityPrompt()
+	ProximityManager:UpdateAllPrompts()
+end
+
+-- Функции для работы с режимами стрельбы (из частиное отоброение локальных патрон.lua)
+local fireModeCache = {}
+local soundConnections = {}
+local weaponReadyState = {} -- Отслеживание готовности оружия к стрельбе
+local weaponIgnoreChambered = {} -- Игнорировать chambered между openAction и closeAction
+
+local function getFireModes(tool)
+	local conf = tool:FindFirstChild("conf")
+	if not conf or not conf:IsA("ModuleScript") then
+		return nil
+	end
+	
+	local success, config = pcall(function()
+		return require(conf)
+	end)
+	
+	if not success or not config then
+		return nil
+	end
+
+	local startMode = config.general and config.general.mode
+	local switchableModes = config.general and config.general.switchableModes
+
+	if switchableModes then
+		local validModes = {}
+		for _, mode in ipairs(switchableModes) do
+			if mode ~= nil then
+				table.insert(validModes, mode)
+			end
+		end
+		
+		if #validModes > 0 then
+			switchableModes = validModes
+		else
+			switchableModes = nil
+		end
+	end
+
+	if not switchableModes and startMode then
+		switchableModes = {startMode}
+	end
+	
+	if not switchableModes or #switchableModes == 0 then
+		return nil
+	end
+	
+	return {
+		modes = switchableModes,
+		startMode = startMode or switchableModes[1],
+		canSwitch = #switchableModes > 1
+	}
+end
+
+local function getCurrentFireMode(tool)
+	if fireModeCache[tool.Name] then
+		return fireModeCache[tool.Name]
+	end
+
+	local fireModes = getFireModes(tool)
+	if fireModes then
+		fireModeCache[tool.Name] = fireModes.startMode
+		return fireModes.startMode
+	end
+	
+	return nil
+end
+
+local function cycleFireMode(tool)
+	local fireModes = getFireModes(tool)
+	
+	if not fireModes then
+		return
+	end
+	
+	if not fireModes.canSwitch then
+		return
+	end
+	
+	local currentMode = fireModeCache[tool.Name] or fireModes.startMode
+
+	local currentIndex = 1
+	for i, mode in ipairs(fireModes.modes) do
+		if mode == currentMode then
+			currentIndex = i
+			break
+		end
+	end
+
+	local nextIndex = (currentIndex % #fireModes.modes) + 1
+	fireModeCache[tool.Name] = fireModes.modes[nextIndex]
+end
+
+local function monitorFireMode(tool)
+	if soundConnections[tool] then
+		for _, conn in pairs(soundConnections[tool]) do
+			if typeof(conn) == "RBXScriptConnection" then
+				conn:Disconnect()
+			end
+		end
+		soundConnections[tool] = nil
+	end
+	
+	soundConnections[tool] = {}
+	
+	-- Инициализируем состояние оружия как готовое по умолчанию
+	if weaponReadyState[tool.Name] == nil then
+		weaponReadyState[tool.Name] = true
+	end
+
+	local union = tool:FindFirstChild("Union")
+	if not union then
+		return
+	end
+
+	local function isEquipped()
+		local parent = tool.Parent
+		if not parent then
+			return false
+		end
+
+		if parent == workspace:FindFirstChild(localPlayer.Name) then
+			return true
+		end
+		
+		local npcsFolder = workspace:FindFirstChild("NPCSFolder")
+		if npcsFolder and parent == npcsFolder:FindFirstChild(localPlayer.Name) then
+			return true
+		end
+		
+		return false
+	end
+	
+	local function connectToSounds(sound)
+		if sound:IsA("Sound") then
+			if sound.Name == "cycleMode" then
+				local conn = sound.Played:Connect(function()
+					if isEquipped() then
+						cycleFireMode(tool)
+					end
+				end)
+				table.insert(soundConnections[tool], conn)
+
+				if sound.IsPlaying then
+					if isEquipped() then
+						cycleFireMode(tool)
+					end
+				end
+			elseif sound.Name == "openAction" then
+				local conn = sound.Played:Connect(function()
+					if isEquipped() then
+						weaponReadyState[tool.Name] = false -- Не готов к стрельбе
+						weaponIgnoreChambered[tool.Name] = true -- Начинаем игнорировать chambered
+					end
+				end)
+				table.insert(soundConnections[tool], conn)
+				
+				-- Проверяем, если звук уже играет
+				if sound.IsPlaying then
+					if isEquipped() then
+						weaponReadyState[tool.Name] = false
+						weaponIgnoreChambered[tool.Name] = true
+					end
+				end
+			elseif sound.Name == "closeAction" then
+				local conn = sound.Played:Connect(function()
+					if isEquipped() then
+						-- Прекращаем игнорировать chambered
+						weaponIgnoreChambered[tool.Name] = false
+						
+						-- Проверяем количество патронов
+						local currentAmmo = 0
+						local magValue = tool:GetAttribute("mag")
+						
+						if magValue then
+							currentAmmo = magValue
+						else
+							-- Проверяем патроны в камерах
+							for i = 1, 9 do
+								local chamberAttr = tool:GetAttribute("__chamber" .. tostring(i))
+								if chamberAttr == true then
+									currentAmmo = currentAmmo + 1
+								end
+							end
+						end
+						
+						-- Если патронов 0, то всё равно красный (не готов)
+						if currentAmmo > 0 then
+							weaponReadyState[tool.Name] = true -- Готов к стрельбе
+						else
+							weaponReadyState[tool.Name] = false -- Не готов (нет патронов)
+						end
+					end
+				end)
+				table.insert(soundConnections[tool], conn)
+				
+				-- Проверяем, если звук уже играет
+				if sound.IsPlaying then
+					if isEquipped() then
+						weaponIgnoreChambered[tool.Name] = false
+						
+						local currentAmmo = 0
+						local magValue = tool:GetAttribute("mag")
+						
+						if magValue then
+							currentAmmo = magValue
+						else
+							for i = 1, 9 do
+								local chamberAttr = tool:GetAttribute("__chamber" .. tostring(i))
+								if chamberAttr == true then
+									currentAmmo = currentAmmo + 1
+								end
+							end
+						end
+						
+						if currentAmmo > 0 then
+							weaponReadyState[tool.Name] = true
+						else
+							weaponReadyState[tool.Name] = false
+						end
+					end
+				end
+			end
+		end
+	end
+
+	for _, child in ipairs(union:GetChildren()) do
+		connectToSounds(child)
+	end
+
+	local childAddedConn = union.ChildAdded:Connect(function(child)
+		wait(0.01)
+		connectToSounds(child)
+	end)
+	table.insert(soundConnections[tool], childAddedConn)
+end
 
 local killerWeapons = {"K1911", "HWISSH-KP9", "RR-LightCompactPistol", "HEARDBALLA", "JS2-Derringy" , "JS1-Cyclops", "WISP", "Jolibri", "Rosen-Obrez", "Mares Leg", "Sawn-off", "JTS225-Obrez", "Mandols-5", "ZOZ-106", "SKORPION", "ZZ-90", "MAK-10", "Micro KZI", "LUT-E 'KRUS'", "Hammer n Bullet", "Comically Large Spoon", "JS-44", "RR-Mark2", "JS-22", "AGM22", "JS1-Competitor", "Doorbler", "JAVELIN-OBREZS", "Whizz", "Kensington", "THUMPA", "Merretta 486", "Palubu,ZOZ-106", "Kamatov", "RR-LightCompactPistolS","Meretta486Palubu Sawn-Off","Wild Mandols-5","MAK-1020","CharcoalSteel JS-22", "ChromeSlide Turqoise RR-LCP", "Skeleton Rosen-Obrez", "Dual LCPs", "Mares Leg10", "JTS225-Obrez Partycannon", "CharcoalSteel JS-44", "corrodedmetal JS-22", "KamatovS", "JTS225-Obrez Monochrome", "Door'bler", "Clothed SKORPION", "K1911GILDED", "Kensington20", "WISP Pearl", "JS2-BondsDerringy", "JS1-CYCLOPS", "Dual SKORPS", "Clothed Rosen-Obrez", "GraySteel K1911", "Rosen-ObrezGILDED", "PLASTIC JS-22", "CharcoalSteel SKORPION", "Clothed Sawn-off", "Pretty Pink RR-LCP", "Whiteout RR-LightCompactPistolS", "Sawn-off10", "Whiteout Rosen-Obrez", "SKORPION10", "Katya's 'Memories'", "JS2-DerringyGILDED", "JS-22GILDED", "Nikolai's 'Dented'", "JTS225-Obrez Poly", "SilverSteel K1911", "RR-LCP", "DarkSteel K1911", "Door'bler TIGERSTRIPES", "HEARBALLA", "RR-LCP10", "KamatovDRUM", "Charcoal Steel SKORPION", "SKORPION 'AMIRNOV", "Rosen Nagan", "M-1020", "RR-LightCompactPistolS10", "JTS225-ObrezGILDED", "KR7S", "Mooser", "PTRB-41", "TEKE-9", "RUZKH-12", "APZ", "HW-K7", "Sawn-offGILDED", "Memorial", "ANKM-10ROUND", "JTS225", "ZKZ"}
 local sheriffWeapons = {"IZVEKH-412", "J9-Meretta", "RR-Snubby", "Beagle", "HW-M5K", "DRICO", "ZKZ-Obrez", "Buxxberg-COMPACT", "JS-5A-OBREZ", "Dual Elites", "HWISSH-226", "GG-17", "Pretty Pink Buxxberg-COMPACT","GG-1720", "JS-5A-Obrez", "Case Hardened DRICO", "GG-17 TAN", "Dual GG-17s", "CharcoalSteel I412", "ZKZ-Obrez10", "SilverSteel RR-Snubby", "Clothed ZKZ-Obrez", "Pretty Pink GG-17", "GG-17GILDED", "RR-Snubby10", "RR-SnubbyGILDED", "Mini Ranch Rifle"} 
@@ -208,7 +540,7 @@ local teams = {
     ["NETO"] = {
         "Andrew Murphy", "Marshall Fletcher", "Jenson Barnes", "Aaron Knight", "Marco Hughes", "Michael Cooper", 
 		"Gabriel Hall", "Noah Khan", "Harry Thompson", "Lamar Farrell", "Jordan Henderson", "Antonio Lindsay", 
-		"Sam Jordan", "Tom Stone", "Samuel Lawson", "Julio Bishop", "Morgan Calhoun", "Oween Lee", "Westrn Ramirez", "Aidyn Sparks", "Harvey Nicholson"
+		"Sam Jordan", "Tom Stone", "Samuel Lawson", "Julio Bishop", "Morgan Calhoun", "Oween Lee", "Westrn Ramirez", "Aidyn Sparks", "Harvey Nicholson",
 		"Dylan Wells", "Jack Dawson"
     },
     ["Juggernaut"] = {
@@ -1323,10 +1655,12 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
             local chamberedValue = equippedWeapon:GetAttribute("chambered")
             
             if isLocalPlayer then
-                if chamberedValue == nil then
-                    chamberStatus = "Ready"
+                -- Получаем режим стрельбы
+                local fireMode = getCurrentFireMode(equippedWeapon)
+                if fireMode then
+                    chamberStatus = string.upper(fireMode)
                 else
-                    chamberStatus = chamberedValue and "Ready" or "Not Ready"
+                    chamberStatus = "AUTO" -- Режим по умолчанию
                 end
             else
                 if chamberedValue == nil then
@@ -1379,7 +1713,7 @@ local function createWeaponAmmoDisplay(tool)
     localAmmoTextLabel = Instance.new("TextLabel")
     localAmmoTextLabel.Size = UDim2.new(1, 0, 1, 0)
     localAmmoTextLabel.BackgroundTransparency = 1
-    localAmmoTextLabel.TextColor3 = LocalAmmoDisplaySettings.TextColor
+    localAmmoTextLabel.TextColor3 = Color3.new(0, 1, 0) -- Зеленый по умолчанию
     localAmmoTextLabel.TextSize = LocalAmmoDisplaySettings.TextSize
     localAmmoTextLabel.Font = LocalAmmoDisplaySettings.Font
     localAmmoTextLabel.Text = "Loading..."
@@ -1391,6 +1725,9 @@ local function createWeaponAmmoDisplay(tool)
     localAmmoTextLabel.Parent = localAmmoBillboard
     
     currentEquippedTool = tool
+    
+    -- Добавляем мониторинг режима стрельбы
+    monitorFireMode(tool)
 end
 
 local function updateLocalAmmoDisplay()
@@ -1437,6 +1774,60 @@ local function updateLocalAmmoDisplay()
         end
     else
         if localAmmoTextLabel then
+            -- Определяем цвет на основе статуса оружия и звуковых событий
+            local textColor = Color3.new(0, 1, 0) -- Зеленый по умолчанию
+            
+            -- Проверяем количество патронов
+            local currentAmmo = 0
+            local magValue = equippedWeapon:GetAttribute("mag")
+            
+            if magValue then
+                currentAmmo = magValue
+            else
+                -- Проверяем патроны в камерах
+                for i = 1, 9 do
+                    local chamberAttr = equippedWeapon:GetAttribute("__chamber" .. tostring(i))
+                    if chamberAttr == true then
+                        currentAmmo = currentAmmo + 1
+                    end
+                end
+            end
+            
+            -- Проверяем атрибуты готовности
+            local chamberedValue = equippedWeapon:GetAttribute("chambered")
+            local chamberPos = equippedWeapon:GetAttribute("chamberPos")
+            local chambear = equippedWeapon:GetAttribute("__chambear")
+            
+            -- Проверяем, нужно ли игнорировать chambered
+            local shouldIgnoreChambered = weaponIgnoreChambered[equippedWeapon.Name] == true
+            
+            -- Если патронов 0 - всегда красный
+            if currentAmmo == 0 then
+                textColor = Color3.new(1, 0, 0) -- Красный - нет патронов
+            -- Если не игнорируем chambered, проверяем его значения
+            elseif not shouldIgnoreChambered and chamberedValue ~= nil and chamberedValue == false then
+                textColor = Color3.new(1, 0, 0) -- Красный - не заряжен
+            elseif not shouldIgnoreChambered and chambear ~= nil and chambear == false then
+                textColor = Color3.new(1, 0, 0) -- Красный - не заряжен
+            elseif not shouldIgnoreChambered and chamberPos ~= nil then
+                local chamberName = "__chamber" .. tostring(chamberPos)
+                local chamberValue = equippedWeapon:GetAttribute(chamberName)
+                if chamberValue == false or chamberValue == nil then
+                    textColor = Color3.new(1, 0, 0) -- Красный - камера пуста
+                end
+            else
+                -- Если нет критических проблем или игнорируем chambered, проверяем звуковое состояние
+                if weaponReadyState[equippedWeapon.Name] ~= nil then
+                    if weaponReadyState[equippedWeapon.Name] == false then
+                        textColor = Color3.new(1, 0, 0) -- Красный - не готов по звуку
+                    else
+                        textColor = Color3.new(0, 1, 0) -- Зеленый - готов
+                    end
+                end
+            end
+            
+            localAmmoTextLabel.TextColor3 = textColor
+            
             if chamberStatus ~= "" then
                 localAmmoTextLabel.Text = ammoInfo .. "\n" .. chamberStatus
             else
@@ -1461,6 +1852,20 @@ local function monitorWeaponChanges()
         
         local function onChildRemoved(child)
             if child:IsA("Tool") and child == currentEquippedTool then
+                -- Очищаем soundConnections для удаляемого оружия
+                if soundConnections[child] then
+                    for _, conn in pairs(soundConnections[child]) do
+                        if typeof(conn) == "RBXScriptConnection" then
+                            conn:Disconnect()
+                        end
+                    end
+                    soundConnections[child] = nil
+                end
+                
+                -- Очищаем состояние готовности оружия
+                weaponReadyState[child.Name] = nil
+                weaponIgnoreChambered[child.Name] = nil
+                
                 if localAmmoBillboard then
                     localAmmoBillboard:Destroy()
                     localAmmoBillboard = nil
@@ -1505,6 +1910,24 @@ local function toggleLocalAmmoDisplay()
             localAmmoConnection:Disconnect()
             localAmmoConnection = nil
         end
+        
+        -- Очищаем все soundConnections
+        for tool, connections in pairs(soundConnections) do
+            if type(connections) == "table" then
+                for _, conn in pairs(connections) do
+                    if typeof(conn) == "RBXScriptConnection" then
+                        conn:Disconnect()
+                    end
+                end
+            elseif typeof(connections) == "RBXScriptConnection" then
+                connections:Disconnect()
+            end
+        end
+        soundConnections = {}
+        
+        -- Очищаем состояния готовности оружия
+        weaponReadyState = {}
+        weaponIgnoreChambered = {}
         
         if localAmmoBillboard then
             localAmmoBillboard:Destroy()
@@ -1657,7 +2080,7 @@ end
 local activeESPGuis = {}
 local activeWeaponHighlights = {}
 
-local function forceUpdateESP()
+function forceUpdateESP()
     if not ESPEnabled then return end
     
     for player, espData in pairs(activeESPGuis) do
@@ -2607,18 +3030,6 @@ safeCreateElement(ESPTab, "Toggle", {
     end,
 })
 
-safeCreateElement(ESPTab, "ColorPicker", {
-    Name = "Text Color",
-    Color = LocalAmmoDisplaySettings.TextColor,
-    Flag = "LocalAmmoTextColor",
-    Callback = function(Value)
-        LocalAmmoDisplaySettings.TextColor = Value
-        if localAmmoTextLabel then
-            localAmmoTextLabel.TextColor3 = Value
-        end
-    end
-})
-
 safeCreateElement(ESPTab, "Slider", {
     Name = "Text Size",
     Range = {12, 48},
@@ -2948,6 +3359,8 @@ safeCreateElement(AimbotTab, "Toggle", {
     end,
 })
 
+
+
 local HitboxTab = Window:CreateTab("Hitbox", 4483362458)
 
 safeCreateElement(HitboxTab, "Section", {
@@ -3195,6 +3608,20 @@ safeCreateElement(OthersTab, "Slider", {
     end,
 })
 
+safeCreateElement(OthersTab, "Section", {
+    Name = "instant ProximityPrompt"
+})
+
+safeCreateElement(OthersTab, "Toggle", {
+    Name = "instant ProximityPrompt",
+    CurrentValue = InstantProximityPromptSettings.Enabled,
+    Flag = "InstantProximityPromptEnabled",
+    Callback = function(Value)
+        InstantProximityPromptSettings.Enabled = Value
+        toggleInstantProximityPrompt()
+    end,
+})
+
 -- ОБРАБОТЧИКИ СОБЫТИЙ
 local hitboxKeyConnection
 hitboxKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
@@ -3306,3 +3733,6 @@ end
 if LocalAmmoDisplaySettings.Enabled then
     toggleLocalAmmoDisplay()
 end
+
+-- Initialize ProximityManager
+initializeProximityManager()
