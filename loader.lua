@@ -1,3 +1,4 @@
+
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -233,6 +234,61 @@ end
 
 local function toggleInstantProximityPrompt()
 	ProximityManager:UpdateAllPrompts()
+end
+
+-- Функция для удаления локального скрипта CameraResetOnDeathAndCameraShakeAndJumpCooldown
+local function removeCameraResetScript()
+    local success = false
+    local scriptsRemoved = 0
+    
+    -- Поиск и удаление скрипта в PlayerGui
+    local PlayerGui = localPlayer:FindFirstChild("PlayerGui")
+    if PlayerGui then
+        for _, child in ipairs(PlayerGui:GetDescendants()) do
+            if child:IsA("LocalScript") and child.Name == "CameraResetOnDeathAndCameraShakeAndJumpCooldown" then
+                child:Destroy()
+                scriptsRemoved = scriptsRemoved + 1
+                success = true
+            end
+        end
+    end
+    
+    -- Поиск и удаление скрипта в PlayerScripts
+    local PlayerScripts = localPlayer:FindFirstChild("PlayerScripts")
+    if PlayerScripts then
+        for _, child in ipairs(PlayerScripts:GetDescendants()) do
+            if child:IsA("LocalScript") and child.Name == "CameraResetOnDeathAndCameraShakeAndJumpCooldown" then
+                child:Destroy()
+                scriptsRemoved = scriptsRemoved + 1
+                success = true
+            end
+        end
+    end
+    
+    -- Поиск и удаление скрипта в StarterGui (если есть доступ)
+    local StarterGui = game:GetService("StarterGui")
+    if StarterGui then
+        for _, child in ipairs(StarterGui:GetDescendants()) do
+            if child:IsA("LocalScript") and child.Name == "CameraResetOnDeathAndCameraShakeAndJumpCooldown" then
+                pcall(function()
+                    child:Destroy()
+                    scriptsRemoved = scriptsRemoved + 1
+                    success = true
+                end)
+            end
+        end
+    end
+    
+    -- Поиск в Workspace (на всякий случай)
+    for _, child in ipairs(Workspace:GetDescendants()) do
+        if child:IsA("LocalScript") and child.Name == "CameraResetOnDeathAndCameraShakeAndJumpCooldown" then
+            pcall(function()
+                child:Destroy()
+                scriptsRemoved = scriptsRemoved + 1
+                success = true
+            end)
+        end
+    end
 end
 
 -- Функции для работы с режимами стрельбы (из частиное отоброение локальных патрон.lua)
@@ -3619,6 +3675,17 @@ safeCreateElement(OthersTab, "Toggle", {
     Callback = function(Value)
         InstantProximityPromptSettings.Enabled = Value
         toggleInstantProximityPrompt()
+    end,
+})
+
+safeCreateElement(OthersTab, "Section", {
+    Name = "Camera Script Remover"
+})
+
+safeCreateElement(OthersTab, "Button", {
+    Name = "Remove Camera Shaking(permanent)",
+    Callback = function()
+        removeCameraResetScript()
     end,
 })
 
