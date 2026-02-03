@@ -544,7 +544,7 @@ local teams = {
 		"Dylan Wells", "Jack Dawson"
     },
     ["Juggernaut"] = {
-        "Stanislav", "Veronika Kazakova", "Mason Jr.", "Traktirnikov Gennadiy", "Vanya Aleksandrov", "Alexei Tarasov", "Ryman Yegorov", "Viadimir Koltsov"
+        "Stanislav", "Veronika Kazakova", "Mason Jr.", "Traktirnikov Gennadiy", "Vanya Aleksandrov", "Alexei Tarasov", "Ryman Yegorov", "Viadimir Koltsov", "Traktirnikov Gennady"
     },
     ["Robbers"] = {
         "Anastasya Revyakina", "Angela Korzhakova", "Denis Zhuka", "Katya Bykov", "Klara Ivazova", 
