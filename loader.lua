@@ -1,4 +1,3 @@
-
 local Players = game:GetService("Players")
 local RunService = game:GetService("RunService")
 local Workspace = game:GetService("Workspace")
@@ -381,6 +380,141 @@ local function cycleFireMode(tool)
 
 	local nextIndex = (currentIndex % #fireModes.modes) + 1
 	fireModeCache[tool.Name] = fireModes.modes[nextIndex]
+end
+
+local function prepareWeaponForShooting(tool)
+    if not tool or not tool:IsA("Tool") then
+        return
+    end
+    
+    -- Ждем немного, чтобы оружие полностью загрузилось
+    wait(0.2)
+    
+    -- Сначала проверяем наличие ShellCylinder в conf
+    local conf = tool:FindFirstChild("conf")
+    local hasShellCylinder = false
+    
+    if conf then
+        local shellCylinder = conf:FindFirstChild("ShellCylinder")
+        if shellCylinder and shellCylinder:IsA("Weld") then
+            hasShellCylinder = true
+        end
+    end
+    
+    -- Проверяем наличие атрибута chambered
+    local chamberedValue = tool:GetAttribute("chambered")
+    if chamberedValue == nil then
+        -- Если атрибута chambered нет, игнорируем этот инструмент
+        return
+    end
+    
+    -- Проверяем, есть ли у оружия магазин
+    local magValue = tool:GetAttribute("mag")
+    
+    if magValue then
+        -- Если магазин есть, проверяем количество патронов
+        if magValue == 0 then
+            -- Пытаемся получить максимальное количество из цилиндров в conf
+            local maxAmmo = nil
+            local weaponKey = tool.Name .. "_" .. tostring(tool:GetDebugId())
+            
+            -- Пытаемся получить максимальное количество из кэша
+            if weaponMaxAmmo[weaponKey] and weaponMaxAmmo[weaponKey].maxAmmo then
+                maxAmmo = weaponMaxAmmo[weaponKey].maxAmmo
+            else
+                -- Ищем ShellCylinder Weld в conf
+                local conf = tool:FindFirstChild("conf")
+                if conf then
+                    local shellCylinder = conf:FindFirstChild("ShellCylinder")
+                    if shellCylinder and shellCylinder:IsA("Weld") then
+                        -- Считаем количество цилиндров в ShellCylinder
+                        local cylinderCount = 0
+                        for _, child in ipairs(shellCylinder:GetChildren()) do
+                            cylinderCount = cylinderCount + 1
+                        end
+                        if cylinderCount > 0 then
+                            maxAmmo = cylinderCount
+                        end
+                    end
+                end
+            end
+            
+            -- Если количество патронов известно, устанавливаем его
+            if maxAmmo then
+                tool:SetAttribute("mag", maxAmmo)
+            end
+        end
+        
+        -- Устанавливаем chambered в true, если он false
+        if chamberedValue == false then
+            tool:SetAttribute("chambered", true)
+        end
+        
+        -- Устанавливаем __chambear в true, если он false или nil
+        local chambearValue = tool:GetAttribute("__chambear")
+        if chambearValue == false or chambearValue == nil then
+            tool:SetAttribute("__chambear", true)
+        end
+        
+        -- Проверяем и устанавливаем позицию камеры
+        local chamberPos = tool:GetAttribute("chamberPos")
+        if chamberPos then
+            local chamberName = "__chamber" .. tostring(chamberPos)
+            local chamberValue = tool:GetAttribute(chamberName)
+            if chamberValue == false or chamberValue == nil then
+                tool:SetAttribute(chamberName, true)
+            end
+        end
+    else
+        -- Если магазина нет, работаем с камерами
+        local hasChambers = false
+        local maxChambers = 0
+        
+        -- Если есть ShellCylinder, используем его для определения максимального количества камер
+        if hasShellCylinder and conf then
+            local shellCylinder = conf:FindFirstChild("ShellCylinder")
+            if shellCylinder and shellCylinder:IsA("Weld") then
+                -- Считаем количество цилиндров как максимальное количество камер
+                for _, child in ipairs(shellCylinder:GetChildren()) do
+                    maxChambers = maxChambers + 1
+                end
+            end
+        end
+        
+        -- Проверяем все возможные камеры
+        for i = 1, 9 do
+            local chamberAttr = tool:GetAttribute("__chamber" .. tostring(i))
+            if chamberAttr ~= nil then
+                hasChambers = true
+                -- Если камера пуста, заполняем её
+                if chamberAttr == false then
+                    tool:SetAttribute("__chamber" .. tostring(i), true)
+                end
+            end
+        end
+        
+        -- Если есть ShellCylinder и известно максимальное количество камер, заполняем их
+        if hasShellCylinder and maxChambers > 0 then
+            for i = 1, maxChambers do
+                local chamberName = "__chamber" .. tostring(i)
+                local chamberValue = tool:GetAttribute(chamberName)
+                if chamberValue == nil then
+                    -- Создаем новую камеру и заполняем её
+                    tool:SetAttribute(chamberName, true)
+                elseif chamberValue == false then
+                    -- Заполняем пустую камеру
+                    tool:SetAttribute(chamberName, true)
+                end
+            end
+        elseif not hasChambers then
+            -- Если камер нет и нет ShellCylinder, создаем одну заполненную камеру
+            tool:SetAttribute("__chamber1", true)
+        end
+    end
+    
+    -- Устанавливаем состояние готовности оружия
+    weaponReadyState[tool.Name] = true
+    weaponIgnoreChambered[tool.Name] = false
 end
 
 local function monitorFireMode(tool)
@@ -1685,6 +1819,23 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
     end
     
     if hasChambers then
+        -- Если есть ShellCylinder, используем его для определения максимального количества
+        if isLocalPlayer then
+            local conf = equippedWeapon:FindFirstChild("conf")
+            if conf then
+                local shellCylinder = conf:FindFirstChild("ShellCylinder")
+                if shellCylinder and shellCylinder:IsA("Weld") then
+                    local maxChambers = 0
+                    for _, child in ipairs(shellCylinder:GetChildren()) do
+                        maxChambers = maxChambers + 1
+                    end
+                    if maxChambers > 0 then
+                        totalChambers = maxChambers
+                    end
+                end
+            end
+        end
+        
         ammoInfo = tostring(chamberedCount) .. "/" .. tostring(totalChambers)
         chamberStatus = ""
     else
@@ -1706,17 +1857,34 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
             end
             
             local maxAmmo = weaponMaxAmmo[weaponKey].maxAmmo
+            
             ammoInfo = tostring(magValue) .. "/" .. tostring(maxAmmo)
             
             local chamberedValue = equippedWeapon:GetAttribute("chambered")
             
             if isLocalPlayer then
-                -- Получаем режим стрельбы
-                local fireMode = getCurrentFireMode(equippedWeapon)
-                if fireMode then
-                    chamberStatus = string.upper(fireMode)
+                -- Проверяем наличие ShellCylinder
+                local conf = equippedWeapon:FindFirstChild("conf")
+                local hasShellCylinder = false
+                
+                if conf then
+                    local shellCylinder = conf:FindFirstChild("ShellCylinder")
+                    if shellCylinder and shellCylinder:IsA("Weld") then
+                        hasShellCylinder = true
+                    end
+                end
+                
+                -- Если есть ShellCylinder, не показываем режим стрельбы
+                if hasShellCylinder then
+                    chamberStatus = ""
                 else
-                    chamberStatus = "AUTO" -- Режим по умолчанию
+                    -- Получаем режим стрельбы только для обычного оружия
+                    local fireMode = getCurrentFireMode(equippedWeapon)
+                    if fireMode then
+                        chamberStatus = string.upper(fireMode)
+                    else
+                        chamberStatus = "AUTO" -- Режим по умолчанию
+                    end
                 end
             else
                 if chamberedValue == nil then
@@ -1726,6 +1894,29 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                 end
             end
         else
+            -- Если атрибута mag нет, проверяем наличие ShellCylinder и __chamber
+            local conf = equippedWeapon:FindFirstChild("conf")
+            local hasShellCylinder = false
+            
+            if conf then
+                local shellCylinder = conf:FindFirstChild("ShellCylinder")
+                if shellCylinder and shellCylinder:IsA("Weld") then
+                    hasShellCylinder = true
+                end
+            end
+            
+            -- Проверяем наличие атрибутов __chamber
+            local hasChambers = false
+            for i = 1, 9 do
+                local chamberAttr = equippedWeapon:GetAttribute("__chamber" .. tostring(i))
+                if chamberAttr ~= nil then
+                    hasChambers = true
+                    break
+                end
+            end
+            
+            -- Если есть ShellCylinder и есть атрибуты __chamber, показываем обычную информацию о камерах
+            -- "shoot once" больше не нужен, так как теперь показываем количество заряженных камер
             return "", ""
         end
     end
@@ -1900,8 +2091,14 @@ local function monitorWeaponChanges()
         local function onChildAdded(child)
             if child:IsA("Tool") then
                 wait(0.1)
+                -- Автоматическая подготовка оружия к стрельбе
+                prepareWeaponForShooting(child)
+                
                 if LocalAmmoDisplaySettings.Enabled then
                     createWeaponAmmoDisplay(child)
+                else
+                    -- Если отображение отключено, все равно добавляем мониторинг
+                    monitorFireMode(child)
                 end
             end
         end
@@ -1936,8 +2133,14 @@ local function monitorWeaponChanges()
         
         for _, child in ipairs(character:GetChildren()) do
             if child:IsA("Tool") then
+                -- Автоматическая подготовка существующего оружия к стрельбе
+                prepareWeaponForShooting(child)
+                
                 if LocalAmmoDisplaySettings.Enabled then
                     createWeaponAmmoDisplay(child)
+                else
+                    -- Если отображение отключено, все равно добавляем мониторинг
+                    monitorFireMode(child)
                 end
                 break
             end
