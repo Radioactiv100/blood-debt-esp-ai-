@@ -575,8 +575,8 @@ local function monitorFireMode(tool)
 			elseif sound.Name == "openAction" then
 				local conn = sound.Played:Connect(function()
 					if isEquipped() then
-						weaponReadyState[tool.Name] = false -- Не готов к стрельбе
-						weaponIgnoreChambered[tool.Name] = true -- Начинаем игнорировать chambered
+						weaponReadyState[tool.Name] = false 
+						weaponIgnoreChambered[tool.Name] = true 
 					end
 				end)
 				table.insert(soundConnections[tool], conn)
@@ -1820,18 +1820,16 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
     
     if hasChambers then
         -- Если есть ShellCylinder, используем его для определения максимального количества
-        if isLocalPlayer then
-            local conf = equippedWeapon:FindFirstChild("conf")
-            if conf then
-                local shellCylinder = conf:FindFirstChild("ShellCylinder")
-                if shellCylinder and shellCylinder:IsA("Weld") then
-                    local maxChambers = 0
-                    for _, child in ipairs(shellCylinder:GetChildren()) do
-                        maxChambers = maxChambers + 1
-                    end
-                    if maxChambers > 0 then
-                        totalChambers = maxChambers
-                    end
+        local conf = equippedWeapon:FindFirstChild("conf")
+        if conf then
+            local shellCylinder = conf:FindFirstChild("ShellCylinder")
+            if shellCylinder and shellCylinder:IsA("Weld") then
+                local maxChambers = 0
+                for _, child in ipairs(shellCylinder:GetChildren()) do
+                    maxChambers = maxChambers + 1
+                end
+                if maxChambers > 0 then
+                    totalChambers = maxChambers
                 end
             end
         end
@@ -1887,10 +1885,27 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                     end
                 end
             else
-                if chamberedValue == nil then
-                    chamberStatus = "Chambered: Yes"
+                -- Для других игроков проверяем наличие ShellCylinder
+                local conf = equippedWeapon:FindFirstChild("conf")
+                local hasShellCylinder = false
+                
+                if conf then
+                    local shellCylinder = conf:FindFirstChild("ShellCylinder")
+                    if shellCylinder and shellCylinder:IsA("Weld") then
+                        hasShellCylinder = true
+                    end
+                end
+                
+                -- Если есть ShellCylinder, не показываем chambered информацию
+                if hasShellCylinder then
+                    chamberStatus = ""
                 else
-                    chamberStatus = chamberedValue and "Chambered: Yes" or "Chambered: No"
+                    -- Показываем информацию о chambered только для обычного оружия
+                    if chamberedValue == nil then
+                        chamberStatus = "Chambered: Yes"
+                    else
+                        chamberStatus = chamberedValue and "Chambered: Yes" or "Chambered: No"
+                    end
                 end
             end
         else
