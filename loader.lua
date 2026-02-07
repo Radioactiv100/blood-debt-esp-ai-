@@ -258,7 +258,7 @@ local function removeCameraResetScript()
         end
     end
     
-    -- Поиск и удаление скрипта в StarterGui (если есть доступ)
+    -- Search and delete the script in StarterGui (if have access)
     local StarterGui = game:GetService("StarterGui")
     if StarterGui then
         for _, child in ipairs(StarterGui:GetDescendants()) do
@@ -272,7 +272,7 @@ local function removeCameraResetScript()
         end
     end
     
-    -- Поиск в Workspace (на всякий случай)
+    -- Search in Workspace (just in case)
     for _, child in ipairs(Workspace:GetDescendants()) do
         if child:IsA("LocalScript") and child.Name == "CameraResetOnDeathAndCameraShakeAndJumpCooldown" then
             pcall(function()
@@ -287,8 +287,8 @@ end
 -- Functions for working with fire modes (from local ammo display)
 local fireModeCache = {}
 local soundConnections = {}
-local weaponReadyState = {} -- Отслеживание готовности оружия к стрельбе
-local weaponIgnoreChambered = {} -- Игнорировать chambered между openAction и closeAction
+local weaponReadyState = {} -- Tracking the readiness of weapons to fire
+local weaponIgnoreChambered = {} -- Ignore chambered between openAction and closeAction
 
 local function getFireModes(tool)
 	local conf = tool:FindFirstChild("conf")
@@ -381,10 +381,10 @@ local function prepareWeaponForShooting(tool)
         return
     end
     
-    -- Ждем немного, чтобы оружие полностью загрузилось
+    -- wait a little for the weapon to fully load
     wait(0.2)
     
-    -- Сначала проверяем наличие ShellCylinder в conf
+    -- First,check if ShellCylinder is available in conf
     local conf = tool:FindFirstChild("conf")
     local hasShellCylinder = false
     
@@ -395,33 +395,33 @@ local function prepareWeaponForShooting(tool)
         end
     end
     
-    -- Проверяем наличие атрибута chambered
+    -- Checking for the presence of the chambered attribute
     local chamberedValue = tool:GetAttribute("chambered")
     if chamberedValue == nil then
-        -- Если атрибута chambered нет, игнорируем этот инструмент
+        -- If the chambered attribute is not present, ignore this tool
         return
     end
     
-    -- Проверяем, есть ли у оружия магазин
+    -- Checking if the weapon has a magazine
     local magValue = tool:GetAttribute("mag")
     
     if magValue then
-        -- Если магазин есть, проверяем количество патронов
+        -- If there is a magazine, check the number of rounds.
         if magValue == 0 then
-            -- Пытаемся получить максимальное количество из цилиндров в conf
+            -- Trying to get the maximum number of cylinders in conf
             local maxAmmo = nil
             local weaponKey = tool.Name .. "_" .. tostring(tool:GetDebugId())
             
-            -- Пытаемся получить максимальное количество из кэша
+            -- Trying to get the maximum amount from the cache
             if weaponMaxAmmo[weaponKey] and weaponMaxAmmo[weaponKey].maxAmmo then
                 maxAmmo = weaponMaxAmmo[weaponKey].maxAmmo
             else
-                -- Ищем ShellCylinder Weld в conf
+                -- Searching for ShellCylinder Weld in conf
                 local conf = tool:FindFirstChild("conf")
                 if conf then
                     local shellCylinder = conf:FindFirstChild("ShellCylinder")
                     if shellCylinder and shellCylinder:IsA("Weld") then
-                        -- Считаем количество цилиндров в ShellCylinder
+                        -- Counting the number of cylinders in ShellCylinder
                         local cylinderCount = 0
                         for _, child in ipairs(shellCylinder:GetChildren()) do
                             cylinderCount = cylinderCount + 1
@@ -433,24 +433,24 @@ local function prepareWeaponForShooting(tool)
                 end
             end
             
-            -- Если количество патронов известно, устанавливаем его
+            -- If the number of rounds is known, install it.
             if maxAmmo then
                 tool:SetAttribute("mag", maxAmmo)
             end
         end
         
-        -- Устанавливаем chambered в true, если он false
+        -- Set chambered to true if it is false
         if chamberedValue == false then
             tool:SetAttribute("chambered", true)
         end
         
-        -- Устанавливаем __chambear в true, если он false или nil
+        -- Set __chambear to true if it is false or nil
         local chambearValue = tool:GetAttribute("__chambear")
         if chambearValue == false or chambearValue == nil then
             tool:SetAttribute("__chambear", true)
         end
         
-        -- Проверяем и устанавливаем позицию камеры
+        -- Checking and setting the chamber position
         local chamberPos = tool:GetAttribute("chamberPos")
         if chamberPos then
             local chamberName = "__chamber" .. tostring(chamberPos)
@@ -460,34 +460,34 @@ local function prepareWeaponForShooting(tool)
             end
         end
     else
-        -- Если магазина нет, работаем с камерами
+        -- If there is no store, we work with chamber.
         local hasChambers = false
         local maxChambers = 0
         
-        -- Если есть ShellCylinder, используем его для определения максимального количества камер
+        -- If there is a ShellCylinder, use it to determine the maximum number of chambers
         if hasShellCylinder and conf then
             local shellCylinder = conf:FindFirstChild("ShellCylinder")
             if shellCylinder and shellCylinder:IsA("Weld") then
-                -- Считаем количество цилиндров как максимальное количество камер
+                -- We consider the number of cylinders as the maximum number of chambers
                 for _, child in ipairs(shellCylinder:GetChildren()) do
                     maxChambers = maxChambers + 1
                 end
             end
         end
         
-        -- Проверяем все возможные камеры
+        -- We check all possible cameras
         for i = 1, 9 do
             local chamberAttr = tool:GetAttribute("__chamber" .. tostring(i))
             if chamberAttr ~= nil then
                 hasChambers = true
-                -- Если камера пуста, заполняем её
+                -- If the chamber is empty, fill it in.
                 if chamberAttr == false then
                     tool:SetAttribute("__chamber" .. tostring(i), true)
                 end
             end
         end
         
-        -- Если есть ShellCylinder и известно максимальное количество камер, заполняем их
+        -- If there is a ShellCylinder and the maximum number of chambers is known, fill them
         if hasShellCylinder and maxChambers > 0 then
             for i = 1, maxChambers do
                 local chamberName = "__chamber" .. tostring(i)
@@ -501,12 +501,12 @@ local function prepareWeaponForShooting(tool)
                 end
             end
         elseif not hasChambers then
-            -- Если камер нет и нет ShellCylinder, создаем одну заполненную камеру
+            -- If there are no chambers and no ShellCylinder, create one filled chamber
             tool:SetAttribute("__chamber1", true)
         end
     end
     
-    -- Устанавливаем состояние готовности оружия
+    -- Setting the weapon's readiness status
     weaponReadyState[tool.Name] = true
     weaponIgnoreChambered[tool.Name] = false
 end
@@ -523,7 +523,7 @@ local function monitorFireMode(tool)
 	
 	soundConnections[tool] = {}
 	
-	-- Инициализируем состояние оружия как готовое по умолчанию
+	-- Initializing the weapon's state as ready by default
 	if weaponReadyState[tool.Name] == nil then
 		weaponReadyState[tool.Name] = true
 	end
@@ -575,7 +575,7 @@ local function monitorFireMode(tool)
 				end)
 				table.insert(soundConnections[tool], conn)
 				
-				-- Проверяем, если звук уже играет
+				--We check if the sound is already playing.
 				if sound.IsPlaying then
 					if isEquipped() then
 						weaponReadyState[tool.Name] = false
@@ -585,17 +585,17 @@ local function monitorFireMode(tool)
 			elseif sound.Name == "closeAction" then
 				local conn = sound.Played:Connect(function()
 					if isEquipped() then
-						-- Прекращаем игнорировать chambered
+						-- Stop ignoring chambered
 						weaponIgnoreChambered[tool.Name] = false
 						
-						-- Проверяем количество патронов
+						-- Checking the number of rounds
 						local currentAmmo = 0
 						local magValue = tool:GetAttribute("mag")
 						
 						if magValue then
 							currentAmmo = magValue
 						else
-							-- Проверяем патроны в камерах
+							-- We check the cartridges in the chambers
 							for i = 1, 9 do
 								local chamberAttr = tool:GetAttribute("__chamber" .. tostring(i))
 								if chamberAttr == true then
@@ -604,7 +604,7 @@ local function monitorFireMode(tool)
 							end
 						end
 						
-						-- Если патронов 0, то всё равно красный (не готов)
+						-- If there are 0 bullets, it will still be red (not ready)
 						if currentAmmo > 0 then
 							weaponReadyState[tool.Name] = true -- Готов к стрельбе
 						else
@@ -614,7 +614,7 @@ local function monitorFireMode(tool)
 				end)
 				table.insert(soundConnections[tool], conn)
 				
-				-- Проверяем, если звук уже играет
+				-- We check if the sound is already playing.
 				if sound.IsPlaying then
 					if isEquipped() then
 						weaponIgnoreChambered[tool.Name] = false
@@ -1813,7 +1813,7 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
     end
     
     if hasChambers then
-        -- Если есть ShellCylinder, используем его для определения максимального количества
+        -- If there is a ShellCylinder, use it to determine the maximum number
         local conf = equippedWeapon:FindFirstChild("conf")
         if conf then
             local shellCylinder = conf:FindFirstChild("ShellCylinder")
@@ -1855,7 +1855,7 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
             local chamberedValue = equippedWeapon:GetAttribute("chambered")
             
             if isLocalPlayer then
-                -- Проверяем наличие ShellCylinder
+                -- Checking for ShellCylinder
                 local conf = equippedWeapon:FindFirstChild("conf")
                 local hasShellCylinder = false
                 
@@ -1866,20 +1866,20 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                     end
                 end
                 
-                -- Если есть ShellCylinder, не показываем режим стрельбы
+                -- If there is a ShellCylinder, do not show the shooting mode
                 if hasShellCylinder then
                     chamberStatus = ""
                 else
-                    -- Получаем режим стрельбы только для обычного оружия
+                    -- We get a shooting mode only for conventional weapons
                     local fireMode = getCurrentFireMode(equippedWeapon)
                     if fireMode then
                         chamberStatus = string.upper(fireMode)
                     else
-                        chamberStatus = "AUTO" -- Режим по умолчанию
+                        chamberStatus = "AUTO"
                     end
                 end
             else
-                -- Для других игроков проверяем наличие ShellCylinder
+                -- For other players, check for ShellCylinder
                 local conf = equippedWeapon:FindFirstChild("conf")
                 local hasShellCylinder = false
                 
@@ -1890,11 +1890,11 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                     end
                 end
                 
-                -- Если есть ShellCylinder, не показываем chambered информацию
+                -- If there is a ShellCylinder, do not show the chambered information
                 if hasShellCylinder then
                     chamberStatus = ""
                 else
-                    -- Показываем информацию о chambered только для обычного оружия
+                    -- Show information about chambered only for conventional weapons
                     if chamberedValue == nil then
                         chamberStatus = "Chambered: Yes"
                     else
@@ -1903,7 +1903,7 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                 end
             end
         else
-            -- Если атрибута mag нет, проверяем наличие ShellCylinder и __chamber
+            -- If there is no mag attribute, check for ShellCylinder and __chamber
             local conf = equippedWeapon:FindFirstChild("conf")
             local hasShellCylinder = false
             
@@ -1914,7 +1914,7 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                 end
             end
             
-            -- Проверяем наличие атрибутов __chamber
+            -- Checking the presence of __chamber attributes
             local hasChambers = false
             for i = 1, 9 do
                 local chamberAttr = equippedWeapon:GetAttribute("__chamber" .. tostring(i))
@@ -1924,8 +1924,7 @@ local function getWeaponAmmoInfo(player, isLocalPlayer)
                 end
             end
             
-            -- Если есть ShellCylinder и есть атрибуты __chamber, показываем обычную информацию о камерах
-            -- "shoot once" больше не нужен, так как теперь показываем количество заряженных камер
+            -- If there is a ShellCylinder and there are __chamber attributes, we display the usual information about the chambers
             return "", ""
         end
     end
@@ -1982,7 +1981,7 @@ local function createWeaponAmmoDisplay(tool)
     
     currentEquippedTool = tool
     
-    -- Добавляем мониторинг режима стрельбы
+    -- Adding shooting mode monitoring
     monitorFireMode(tool)
 end
 
@@ -2030,17 +2029,17 @@ local function updateLocalAmmoDisplay()
         end
     else
         if localAmmoTextLabel then
-            -- Определяем цвет на основе статуса оружия и звуковых событий
-            local textColor = Color3.new(0, 1, 0) -- Зеленый по умолчанию
+            -- We determine the color based on the weapon status and sound events
+            local textColor = Color3.new(0, 1, 0)
             
-            -- Проверяем количество патронов
+            --Checking the number of rounds
             local currentAmmo = 0
             local magValue = equippedWeapon:GetAttribute("mag")
             
             if magValue then
                 currentAmmo = magValue
             else
-                -- Проверяем патроны в камерах
+                -- We check the cartridges in the chambers
                 for i = 1, 9 do
                     local chamberAttr = equippedWeapon:GetAttribute("__chamber" .. tostring(i))
                     if chamberAttr == true then
@@ -2049,35 +2048,32 @@ local function updateLocalAmmoDisplay()
                 end
             end
             
-            -- Проверяем атрибуты готовности
+            -- Checking the attributes of readiness
             local chamberedValue = equippedWeapon:GetAttribute("chambered")
             local chamberPos = equippedWeapon:GetAttribute("chamberPos")
             local chambear = equippedWeapon:GetAttribute("__chambear")
             
-            -- Проверяем, нужно ли игнорировать chambered
+            -- Checking if you need to ignore chambered
             local shouldIgnoreChambered = weaponIgnoreChambered[equippedWeapon.Name] == true
             
-            -- Если патронов 0 - всегда красный
             if currentAmmo == 0 then
-                textColor = Color3.new(1, 0, 0) -- Красный - нет патронов
-            -- Если не игнорируем chambered, проверяем его значения
+                textColor = Color3.new(1, 0, 0) 
             elseif not shouldIgnoreChambered and chamberedValue ~= nil and chamberedValue == false then
-                textColor = Color3.new(1, 0, 0) -- Красный - не заряжен
+                textColor = Color3.new(1, 0, 0) 
             elseif not shouldIgnoreChambered and chambear ~= nil and chambear == false then
-                textColor = Color3.new(1, 0, 0) -- Красный - не заряжен
+                textColor = Color3.new(1, 0, 0)
             elseif not shouldIgnoreChambered and chamberPos ~= nil then
                 local chamberName = "__chamber" .. tostring(chamberPos)
                 local chamberValue = equippedWeapon:GetAttribute(chamberName)
                 if chamberValue == false or chamberValue == nil then
-                    textColor = Color3.new(1, 0, 0) -- Красный - камера пуста
+                    textColor = Color3.new(1, 0, 0)
                 end
             else
-                -- Если нет критических проблем или игнорируем chambered, проверяем звуковое состояние
                 if weaponReadyState[equippedWeapon.Name] ~= nil then
                     if weaponReadyState[equippedWeapon.Name] == false then
-                        textColor = Color3.new(1, 0, 0) -- Красный - не готов по звуку
+                        textColor = Color3.new(1, 0, 0) 
                     else
-                        textColor = Color3.new(0, 1, 0) -- Зеленый - готов
+                        textColor = Color3.new(0, 1, 0)
                     end
                 end
             end
@@ -2100,13 +2096,13 @@ local function monitorWeaponChanges()
         local function onChildAdded(child)
             if child:IsA("Tool") then
                 wait(0.1)
-                -- Автоматическая подготовка оружия к стрельбе
+                -- Automatic preparation of weapons for firing
                 prepareWeaponForShooting(child)
                 
                 if LocalAmmoDisplaySettings.Enabled then
                     createWeaponAmmoDisplay(child)
                 else
-                    -- Если отображение отключено, все равно добавляем мониторинг
+                    -- If the display is disabled, we still add monitoring
                     monitorFireMode(child)
                 end
             end
@@ -2114,7 +2110,7 @@ local function monitorWeaponChanges()
         
         local function onChildRemoved(child)
             if child:IsA("Tool") and child == currentEquippedTool then
-                -- Очищаем soundConnections для удаляемого оружия
+                -- Clearing soundConnections for a removed weapon
                 if soundConnections[child] then
                     for _, conn in pairs(soundConnections[child]) do
                         if typeof(conn) == "RBXScriptConnection" then
@@ -2124,7 +2120,6 @@ local function monitorWeaponChanges()
                     soundConnections[child] = nil
                 end
                 
-                -- Очищаем состояние готовности оружия
                 weaponReadyState[child.Name] = nil
                 weaponIgnoreChambered[child.Name] = nil
                 
@@ -2142,13 +2137,11 @@ local function monitorWeaponChanges()
         
         for _, child in ipairs(character:GetChildren()) do
             if child:IsA("Tool") then
-                -- Автоматическая подготовка существующего оружия к стрельбе
                 prepareWeaponForShooting(child)
                 
                 if LocalAmmoDisplaySettings.Enabled then
                     createWeaponAmmoDisplay(child)
                 else
-                    -- Если отображение отключено, все равно добавляем мониторинг
                     monitorFireMode(child)
                 end
                 break
@@ -2193,7 +2186,7 @@ local function toggleLocalAmmoDisplay()
         end
         soundConnections = {}
         
-        -- Очищаем состояния готовности оружия
+        -- Clearing weapon readiness states
         weaponReadyState = {}
         weaponIgnoreChambered = {}
         
@@ -3038,17 +3031,17 @@ local function AimAtTarget(target)
     local targetPart = target.Character:FindFirstChild(GetCurrentLockPart())
     if not targetPart then return end
     
-    -- Получаем скорость цели для предсказания
+    -- get the speed of the target for prediction
     local targetVelocity = Vector3.new(0, 0, 0)
     local humanoidRootPart = target.Character:FindFirstChild("HumanoidRootPart")
     if humanoidRootPart then
         targetVelocity = humanoidRootPart.Velocity
     end
     
-    -- Получаем предсказанную позицию
+    -- get the predicted position
     local predictedPosition = GetPredictedPosition(targetPart, targetVelocity)
     
-    -- Применяем плавное наведение
+    -- Using smooth guidance
     if AimbotSettings.Smoothness > 0 then
         Camera.CFrame = SmoothAim(Camera.CFrame, predictedPosition, AimbotSettings.Smoothness)
     else
@@ -3096,8 +3089,8 @@ end
 
 -- INTERFACE
 local Window = Rayfield:CreateWindow({
-    Name = "RADIO HUB",
-    LoadingTitle = "RADIO HUB",
+    Name = "BD",
+    LoadingTitle = "BD",
     LoadingSubtitle = "by AI",
     ConfigurationSaving = {
         Enabled = true,
@@ -3529,29 +3522,29 @@ for _, partName in ipairs(bodyParts) do
         Flag = "AimbotPart_" .. partName,
         Callback = function(Value)
             if Value then
-                -- Добавляем часть в список, если ее там нет
+                -- Add a part to the list if it's not there
                 if table.find(AimbotSettings.AimParts, partName) == nil then
                     table.insert(AimbotSettings.AimParts, partName)
                 end
             else
-                -- Удаляем часть из списка
+                -- Deleting a part from the list
                 local index = table.find(AimbotSettings.AimParts, partName)
                 if index then
                     table.remove(AimbotSettings.AimParts, index)
                 end
                 
-                -- Если список стал пустым, добавляем Head по умолчанию
+                -- If the list is empty, add the default Head
                 if #AimbotSettings.AimParts == 0 then
                     table.insert(AimbotSettings.AimParts, "Head")
                     partToggles["Head"]:Set(true)
                 end
             end
             
-            -- Обновляем текущую часть прицеливания
+            -- Updating the current part of aiming
             if #AimbotSettings.AimParts == 1 then
                 CurrentLockPart = AimbotSettings.AimParts[1]
             else
-                -- При изменении списка частей сбрасываем таймер
+                -- When changing the list of parts, reset the timer.
                 LastSwitchTime = tick()
                 NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
             end
