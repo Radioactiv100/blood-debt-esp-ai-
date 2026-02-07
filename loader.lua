@@ -43,18 +43,12 @@ local State = {
     ESP_TeamCheck = false,
     WalkLock = false,
     WeaponEnhancementsEnabled = true,
-    RapidFire = false,
-    InfiniteAmmo = false,
-    SpreadControl = false,
 }
 
 local Settings = {
     WalkSpeed = 16,
     WalkMin = 8,
     WalkMax = 200,
-    RapidFireRate = 0.02,
-    SpreadValue = 0,
-    AmmoValue = 30,
 }
 
 local DoorHandleSettings = {
@@ -120,7 +114,7 @@ local HitboxSettings = {
     Material = "Neon"
 }
 
--- ОБНОВЛЕННЫЕ НАСТРОЙКИ АИМБОТА
+-- UPDATED AIMBOT SETTINGS
 local AimbotSettings = {
     Enabled = false,
     TeamCheck = true,
@@ -235,7 +229,7 @@ local function toggleInstantProximityPrompt()
 	ProximityManager:UpdateAllPrompts()
 end
 
--- Функция для удаления локального скрипта CameraResetOnDeathAndCameraShakeAndJumpCooldown
+-- Function to remove local script CameraResetOnDeathAndCameraShakeAndJumpCooldown
 local function removeCameraResetScript()
     local success = false
     local scriptsRemoved = 0
@@ -290,7 +284,7 @@ local function removeCameraResetScript()
     end
 end
 
--- Функции для работы с режимами стрельбы (из частиное отоброение локальных патрон.lua)
+-- Functions for working with fire modes (from local ammo display)
 local fireModeCache = {}
 local soundConnections = {}
 local weaponReadyState = {} -- Отслеживание готовности оружия к стрельбе
@@ -2748,7 +2742,7 @@ local function disableESP()
     playersMatchingHints = {}
 end
 
--- АИМБОТ СИСТЕМА (ОБНОВЛЕННАЯ)
+-- AIMBOT SYSTEM (UPDATED)
 local AimbotEnabled = false
 local CurrentTarget = nil
 local CurrentLockPart = AimbotSettings.AimParts[1]
@@ -2769,7 +2763,7 @@ FOVCircle.Thickness = 2
 FOVCircle.Filled = false
 FOVCircle.Position = Vector2.new(CameraViewportSize.X / 2, Camera.ViewportSize.Y / 2)
 
--- Функция для получения предсказанной позиции
+-- Function to get predicted position
 local function GetPredictedPosition(targetPart, targetVelocity)
     if AimbotSettings.PredictionStrength <= 0 then
         return targetPart.Position
@@ -2777,19 +2771,19 @@ local function GetPredictedPosition(targetPart, targetVelocity)
     
     local distance = (targetPart.Position - Camera.CFrame.Position).Magnitude
     
-    -- Базовое время полета (можно настроить под конкретную игру)
+    -- Base flight time (can be adjusted for specific game)
     local baseTime = distance / 1000
     
-    -- Учитываем силу предсказания
+    -- Account for prediction strength
     local predictionTime = baseTime * AimbotSettings.PredictionStrength
     
-    -- Предсказываем позицию
+    -- Predict position
     local predictedPosition = targetPart.Position + (targetVelocity * predictionTime)
     
     return predictedPosition
 end
 
--- Функция для плавного наведения
+-- Function for smooth aiming
 local function SmoothAim(currentCFrame, targetPosition, smoothness)
     if smoothness <= 0 then
         return CFrame.new(currentCFrame.Position, targetPosition)
@@ -2798,27 +2792,27 @@ local function SmoothAim(currentCFrame, targetPosition, smoothness)
     local currentLookVector = currentCFrame.LookVector
     local targetLookVector = (targetPosition - currentCFrame.Position).Unit
     
-    -- Интерполяция между текущим и целевым направлением
+    -- Interpolation between current and target direction
     local smoothedLookVector = currentLookVector:Lerp(targetLookVector, 1 - smoothness)
     
     return CFrame.new(currentCFrame.Position, currentCFrame.Position + smoothedLookVector)
 end
 
--- Функция для получения текущей части прицеливания
+-- Function to get current aim part
 local function GetCurrentLockPart()
     local selectedParts = AimbotSettings.AimParts
     
-    -- Если выбрана только одна часть - используем ее
+    -- If only one part is selected - use it
     if #selectedParts == 1 then
         return selectedParts[1]
-    -- Если выбрано несколько частей - случайный выбор с интервалом
+    -- If multiple parts are selected - random selection with interval
     else
         if tick() - LastSwitchTime >= NextSwitchTime then
             local randomIndex = math.random(1, #selectedParts)
             CurrentLockPart = selectedParts[randomIndex]
             LastSwitchTime = tick()
             NextSwitchTime = math.random(AimbotSettings.SwitchInterval.Min, AimbotSettings.SwitchInterval.Max)
-            VisibilityCache = {} -- Очищаем кэш видимости при смене части
+            VisibilityCache = {} -- Clear visibility cache when switching parts
         end
         return CurrentLockPart
     end
@@ -3100,7 +3094,7 @@ local function startAimbotLoop()
     end)
 end
 
--- ИНТЕРФЕЙС
+-- INTERFACE
 local Window = Rayfield:CreateWindow({
     Name = "RADIO HUB",
     LoadingTitle = "RADIO HUB",
@@ -3907,7 +3901,7 @@ safeCreateElement(OthersTab, "Button", {
     end,
 })
 
--- ОБРАБОТЧИКИ СОБЫТИЙ
+-- EVENT HANDLERS
 local hitboxKeyConnection
 hitboxKeyConnection = UserInputService.InputBegan:Connect(function(input, gameProcessed)
     if gameProcessed then return end
@@ -3990,7 +3984,7 @@ Players.PlayerRemoving:Connect(function(player)
     hitboxParts[player] = nil
 end)
 
--- ЗАПУСК СИСТЕМ
+-- SYSTEM STARTUP
 Rayfield:LoadConfiguration()
 
 startAimbotLoop()
